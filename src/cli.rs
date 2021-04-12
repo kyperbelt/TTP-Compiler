@@ -3,6 +3,7 @@ use std::env::Args;
 use crate::compiler;
 
 use std::io::prelude::*;
+use std::fs::OpenOptions;
 use compiler::Program;
 use compiler::lexer;
 use compiler::parser;
@@ -12,10 +13,14 @@ use std::fs;
 
 #[derive(PartialEq,Debug,Clone,Copy)]
 pub enum CommandType{
-    Help,
-    Version,
-    Compile,
-    Output,
+    Help,               // show help for all commands or a specific command
+    Version,            // show the current version of the ttpc
+    Compile,            // compile a ttpasm file
+    Output,             // set the output file
+    Binary,             // set if binary output (off by default)
+    Dump,               // dump the tokens
+    Tree                // show the hierchy
+    // Analyze TODO: create a vm to run analysis on
 }
 
 
@@ -27,6 +32,7 @@ impl CommandType{
             "-h" | "--help"     => {Some(CommandType::Help)},
             "-c" | "--compile"  =>{Some(CommandType::Compile)},
             "-o" | "--output"   =>{Some(CommandType::Output)},
+            "-b" | "--binary"   =>{Some(CommandType::Binary)}
             _=>{None}
         }
     }
@@ -51,7 +57,8 @@ impl CommandType{
     /// but compile does not depend on output
     pub fn get_dependencies(&self)->Option<&[CommandType]>{
         match self{
-            CommandType::Output => {Some(&[CommandType::Compile])},
+            CommandType::Output | CommandType::Binary |
+            CommandType::Tree   => {Some(&[CommandType::Compile])},
             _=>{None}
         }
     }
@@ -93,59 +100,97 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
     let mut parser : Option<parser::Parser> = None;
     let mut program : Option<Program> = None;
     let mut output : Option<path::PathBuf> = None;
+    let mut binary : bool = false;
 
     while next_command != None{
         let command = next_command.unwrap();
         match command.command_type{
             CommandType::Compile =>{
                 let in_path = path::PathBuf::from(command.arg.as_ref().unwrap());
-                if let Ok(file) = fs::File::open(in_path.as_path()) {
-                    let mut kf = file;
-                    // do file stuff here
-                    let mut source = String::new();
-                    if let Err(_) = kf.read_to_string(&mut source){
-                        return Err(format!("Unable to read file."));
+
+                if in_path.is_file(){
+
+                    if let Ok(file) = fs::File::open(in_path.as_path()) {
+                        let mut kf = file;
+                        // do file stuff here
+                        let mut source = String::new();
+                        if let Err(_) = kf.read_to_string(&mut source){
+                            return Err(format!("Unable to read file."));
+                        }
+
+                        let tokens = lexer.tokenize(source.as_str())?;
+                        let mut inner_parser = parser::Parser::create(&tokens);
+
+                        // println!("Tokens:");
+                        // for token in &tokens{
+                        //     println!("{}",token);
+                        // }
+
+                        let root = inner_parser.generate()?;
+
+
+                        let inner_program = compiler::Compiler::compile(root)?;
+
+                        // println!("{}",inner_program.dump());
+
+                        parser = Some(inner_parser);
+                        program = Some(inner_program);
+
+                        let stem = in_path.file_stem().unwrap();
+                        let mut out_path = path::PathBuf::from(in_path.as_os_str());
+                        out_path.set_file_name(stem);
+
+                        output = Some(out_path)
+
+                    }else{
+                        return Err(format!("Unable to resolve file: {} .",in_path.as_path().to_str().unwrap()));
                     }
-
-                    let tokens = lexer.tokenize(source.as_str())?;
-                    let mut inner_parser = parser::Parser::create(&tokens);
-
-                    println!("Tokens:");
-                    for token in &tokens{
-                        println!("{}",token);
-                    }
-
-                    let mut root = inner_parser.generate()?;
-
-
-                    let inner_program = compiler::Compiler::compile(root)?;
-
-                    println!("{}",inner_program.dump());
-
-                    parser = Some(inner_parser);
-                    program = Some(inner_program);
-
-
-
-
                 }else{
-                    return Err(format!("Unable to resolve file: {} .",in_path.as_path().to_str().unwrap()));
+                    return Err(format!("{} is not a valid file.",command.arg.as_ref().unwrap()))
                 }
 
             },
             CommandType::Output =>{
-
+                // set the output file
             },
             CommandType::Version =>{
                 println!("[ttpc] by Jonathan Camarena 2021 - version {}", compiler::VERSION);
             },
             CommandType::Help =>{
+                // display help for commands
 
-
+            },
+            CommandType::Binary=>{
+                // output as binary without logisim header
+            },
+            CommandType::Dump =>{
+                // dump the tokens to console TODO: allow file output
+            },
+            CommandType::Tree =>{
+                // show the hierchy
             }
         }
         next_command = iter.next();
     }
+
+    if let Some(p) = program{
+        //FIXME : add more error checking to this file operation
+        let mut options = OpenOptions::new();
+        let mut file = options.write(true).create(true).append(false).open(output.unwrap()).unwrap();
+
+        let mut out = String::new();
+
+        if !binary{
+            out.push_str("v2.0 raw\n"); // makes this compatible with Logisim v 2.7.1
+        }
+        out.push_str(p.dump().as_str());
+
+        if let Err(_) = file.write(out.as_bytes()){
+            return Err(format!("unable to write to file!"))
+        }
+    }
+
+    println!("Success!");
     Ok(())
 }
 

@@ -3,7 +3,7 @@ pub mod parser;
 
 use parser::*;
 
-pub const VERSION : &str = "0.0.1";
+pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 // operations where x and y are considered registers
 #[derive(Debug,PartialEq,Clone,Copy)]
@@ -187,7 +187,7 @@ impl Program{
         for instruction in &self.instructions{
             out.push_str(format!("{:02X} ",instruction.data).as_str());
             count+=1;
-            if count % 4 == 0 {
+            if count % 3 == 0 {
                 out.push('\n')
             }
         }

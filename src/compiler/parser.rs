@@ -45,7 +45,6 @@ pub struct Expression{
 
 pub struct Parser<'a>{
     root : RootNode,
-    expression_mode: bool,
     tokens :  &'a Vec<Token>,
     current_index : usize,
 }
@@ -64,7 +63,7 @@ pub trait DebugInfo{
 impl<'a> Parser<'a>{
 
     pub fn create(tokens:&'a Vec<Token>)->Self{
-        Parser{root:RootNode{statements:Vec::new()},expression_mode:false,tokens,current_index:0}
+        Parser{root:RootNode{statements:Vec::new()},tokens,current_index:0}
     }
 
     pub fn reset(&mut self){
@@ -142,10 +141,9 @@ impl<'a> Parser<'a>{
                     if statement.expressions.len() > 1{
                         // we only expect 1 expression for a byte
                         // if we have more throw an error
-                        // FIXME
+                        return Err(format!("Too many label parameters for label[{}] at line:{} col:{}",statement.value,statement.line,statement.col));
                     }
 
-                    //FIXME TODO:: instead of inserting a byte here we just replace all the values from a label directly into its reference
 
                     // byte_counter+=1; // label has an expression so it consomes one byte
                     // let mut byte_statement = Statement::new();

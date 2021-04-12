@@ -26,9 +26,6 @@ impl fmt::Display for Token{
 }
 
 
-// TODO: parse out tokens
-// TODO : differentiate identifiers of labels and operations
-// TODO :
 
 #[derive(Debug,Clone,Copy,PartialEq)]
 pub enum TokenType{
@@ -82,14 +79,6 @@ impl Lexer{
         tokens.push(Token::create(TokenType::Eof,line_number+1,1,String::from("EOF"),self.current_state));
 
         Ok(tokens)
-    }
-
-    /// return next valid char skipping spaces
-    /// TODO: implement this in scan_line function to consume spaces without causing panic
-    fn next_valid<I>(&self,line_chars:I,col_number:&u32)->Option<char>
-    where I : Iterator<Item = char>{
-        // TODO: get next valid char thats not a space
-        None
     }
 
     fn scan_line(&mut self, line : &String, line_number : u32)->Result<Vec<Token>,String>{
@@ -219,7 +208,6 @@ impl Lexer{
                                     }
                                     line_tokens.push(Token::create(TokenType::Identifier,line_number,start_col,identifier,self.current_state));
 
-                                    // FIXME: check here for when user does something like "number label+" to do arithmetic on number and label in post fix notation
                                 }
                             }else if current_char.is_numeric(){
                                 let mut number = String::from(current_char);

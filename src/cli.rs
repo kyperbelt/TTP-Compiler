@@ -91,10 +91,10 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
 
     let mut next_command = iter.next();
 
-    if next_command.as_ref().unwrap().command_type.get_dependencies() != None{
-        return Err(format!("{:?} command requires additional dependencies.",
-                           next_command.as_ref().unwrap().command_type));
-    }
+    // if next_command.as_ref().unwrap().command_type.get_dependencies() != None{
+    //     return Err(format!("{:?} command requires additional dependencies.",
+    //                        next_command.as_ref().unwrap().command_type));
+    // }
 
     let mut lexer = lexer::Lexer::create();
     let mut parser : Option<parser::Parser> = None;
@@ -103,48 +103,57 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
     let mut binary : bool = false;
 
     while next_command != None{
+
         let command = next_command.unwrap();
+
+        // check dependencies
+        if let Some(dependencies) = command.command_type.get_dependencies(){
+            for dep in dependencies{
+                if let None = find_command(*dep,commands){
+                    return Err(format!("Dependency missing for [{:?}] command. required:{:?}.",command.command_type,dep));
+                }
+            }
+        }
+
         match command.command_type{
             CommandType::Compile =>{
                 let in_path = path::PathBuf::from(command.arg.as_ref().unwrap());
 
                 if in_path.is_file(){
 
-                    if let Ok(file) = fs::File::open(in_path.as_path()) {
-                        let mut kf = file;
-                        // do file stuff here
-                        let mut source = String::new();
-                        if let Err(_) = kf.read_to_string(&mut source){
-                            return Err(format!("Unable to read file."));
-                        }
+                   let mut kf = swap_e(fs::File::open(in_path.as_path()))?;
 
-                        let tokens = lexer.tokenize(source.as_str())?;
-                        let mut inner_parser = parser::Parser::create(&tokens);
-
-                        // println!("Tokens:");
-                        // for token in &tokens{
-                        //     println!("{}",token);
-                        // }
-
-                        let root = inner_parser.generate()?;
-
-
-                        let inner_program = compiler::Compiler::compile(root)?;
-
-                        // println!("{}",inner_program.dump());
-
-                        parser = Some(inner_parser);
-                        program = Some(inner_program);
-
-                        let stem = in_path.file_stem().unwrap();
-                        let mut out_path = path::PathBuf::from(in_path.as_os_str());
-                        out_path.set_file_name(stem);
-
-                        output = Some(out_path)
-
-                    }else{
-                        return Err(format!("Unable to resolve file: {} .",in_path.as_path().to_str().unwrap()));
+                    // do file stuff here
+                    let mut source = String::new();
+                    if let Err(_) = kf.read_to_string(&mut source){
+                        return Err(format!("Unable to read file."));
                     }
+
+                    let tokens = lexer.tokenize(source.as_str())?;
+                    let mut inner_parser = parser::Parser::create(&tokens);
+
+                    // println!("Tokens:");
+                    // for token in &tokens{
+                    //     println!("{}",token);
+                    // }
+
+                    let root = inner_parser.generate()?;
+
+
+                    let inner_program = compiler::Compiler::compile(root)?;
+
+                    // println!("{}",inner_program.dump());
+
+                    parser = Some(inner_parser);
+                    program = Some(inner_program);
+
+                    let stem = in_path.file_stem().unwrap();
+                    let mut out_path = path::PathBuf::from(in_path.as_os_str());
+                    out_path.set_file_name(stem);
+
+                    output = Some(out_path)
+
+
                 }else{
                     return Err(format!("{} is not a valid file.",command.arg.as_ref().unwrap()))
                 }
@@ -152,6 +161,16 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
             },
             CommandType::Output =>{
                 // set the output file
+                if let Some(path) = &command.arg{
+
+                    let new_out = path::PathBuf::from(path);
+                    if new_out.is_dir(){
+                        return Err(format!("[{}] output file path must contain a filename", path));
+                    }
+
+                    output = Some(new_out);
+
+                }
             },
             CommandType::Version =>{
                 println!("[ttpc] by Jonathan Camarena 2021 - version {}", compiler::VERSION);
@@ -162,6 +181,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
             },
             CommandType::Binary=>{
                 // output as binary without logisim header
+                binary = true;
             },
             CommandType::Dump =>{
                 // dump the tokens to console TODO: allow file output
@@ -174,9 +194,8 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
     }
 
     if let Some(p) = program{
-        //FIXME : add more error checking to this file operation
         let mut options = OpenOptions::new();
-        let mut file = options.write(true).create(true).append(false).open(output.unwrap()).unwrap();
+        let mut file = swap_e(options.write(true).create(true).append(false).open(output.as_ref().unwrap()))?;
 
         let mut out = String::new();
 
@@ -188,9 +207,11 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
         if let Err(_) = file.write(out.as_bytes()){
             return Err(format!("unable to write to file!"))
         }
+
     }
 
-    println!("Success!");
+    println!("compiled to file: {:?}" , output.unwrap().as_os_str());
+
     Ok(())
 }
 
@@ -257,4 +278,12 @@ pub fn parse_commands(commands :&mut Args)->Result<Vec<Command>,String>{
 
     }
 
+}
+
+/// swap an error Result from file io into one that just returns a string
+pub fn swap_e<T>(result: Result<T,std::io::Error>)->Result<T,String>{
+    match result{
+        Ok(ok)=>Ok(ok),
+        Err(e)=>Err(format!("{}",e))
+    }
 }

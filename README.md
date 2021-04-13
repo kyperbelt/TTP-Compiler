@@ -9,7 +9,7 @@ A compiler/assembler for files written in .ttpasm to work with "Tak's Toy Proces
 
 ## How to Build
 To build TTP_Compiler you will need the latest version of the [Rust](https://www.rust-lang.org/tools/install) tool-chain.
-Once you have that installed and setup on your system you should clone this repo to a folder on your local machine.
+Once you have that installed and setup on your system you should clone this repository to a folder on your local machine.
 ```
 git clone https://github.com/kyperbelt/TTP_Compiler.git
 ```
@@ -20,7 +20,7 @@ cargo build --release
 The binary file should be located in the `<project>/target/release/` folder.
 
 ## Getting Started
-To get started started using ttpc to convert your beautiful ttpasm into logisim loadable machine code you simply run ttpc as follows:
+To get started using ttpc to convert your beautiful ttpasm into logisim loadable machine code you simply run ttpc as follows:
 ### Windows
 ```
 ttpc -c <yourfile>
@@ -45,5 +45,5 @@ For a full list of commands run `ttpc` with the `--help` or `-h` commands.
 ## Todo:
 An assortment of tasks that still need implementing.
 - [ ] Add virtual machine to help with analysis.
-- [ ] Add preprocessing for function returns using register D and stack data structure.
+- [ ] Add reprocessing for function returns using register D and stack data structure.
 - [ ] Output to binary.(why? because it would be cool!)

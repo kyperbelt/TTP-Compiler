@@ -43,9 +43,9 @@ pub struct Expression{
     col : u32
 }
 
-pub struct Parser<'a>{
-    root : RootNode,
-    tokens :  &'a Vec<Token>,
+pub struct Parser{
+    pub root : RootNode,
+    tokens :  Vec<Token>,
     current_index : usize,
 }
 
@@ -60,9 +60,13 @@ pub trait DebugInfo{
 // Implementations
 // *******************************
 
-impl<'a> Parser<'a>{
+impl Parser{
 
-    pub fn create(tokens:&'a Vec<Token>)->Self{
+    pub fn get_tokens(&self)->&[Token]{
+        &self.tokens
+    }
+
+    pub fn create(tokens:Vec<Token>)->Self{
         Parser{root:RootNode{statements:Vec::new()},tokens,current_index:0}
     }
 
@@ -118,7 +122,7 @@ impl<'a> Parser<'a>{
 
 
             while !Parser::next_token_is(parser.current_index,&parser.tokens,&[TokenType::Op,TokenType::Label,TokenType::Eof]){
-                if let Some(exp) = Parser::parse_expression(&mut parser.current_index,parser.tokens){
+                if let Some(exp) = Parser::parse_expression(&mut parser.current_index,&parser.tokens){
 
                     statement.expressions.push(exp);
                 }else{
@@ -309,7 +313,7 @@ impl<'a> Parser<'a>{
 
     /// we return a ref to the next token
     /// assuming at least there is an EOF token
-    fn next(tokens: &'a [Token],current_index : &mut usize)->Option<&'a Token>{
+    fn next<'a>(tokens: &'a [Token],current_index : &mut usize)->Option<&'a Token>{
         if *current_index >= tokens.len(){
             None
         }else{
@@ -322,20 +326,20 @@ impl<'a> Parser<'a>{
 
     /// check if the next few tokens are the same as the valid types
     /// this does not consume the token
-    fn next_tokens_are(current_index: usize, tokens : &[Token], valid_types: &[TokenType])->bool{
+    // fn next_tokens_are(current_index: usize, tokens : &[Token], valid_types: &[TokenType])->bool{
 
-        let mut temp_index = current_index;
+    //     let mut temp_index = current_index;
 
-        for t in valid_types{
-            if &tokens[temp_index].token_type != t{
-                return false
-            }
-            temp_index+=1;
-        }
+    //     for t in valid_types{
+    //         if &tokens[temp_index].token_type != t{
+    //             return false
+    //         }
+    //         temp_index+=1;
+    //     }
 
-        true
+    //     true
 
-    }
+    // }
 
     /// check if the next token is of the valid types
     /// this does not consume the token

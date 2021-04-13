@@ -54,7 +54,10 @@ impl CommandType{
 
     pub fn get_arg_count(&self)->isize{
         match self{
-            CommandType::Version =>{0},
+            CommandType::Version    |
+            CommandType::Binary     |
+            CommandType::Dump       |
+            CommandType::Tree =>{0},
             CommandType::Help =>{-1} //variable size
             _=>{1}
         }
@@ -87,26 +90,25 @@ impl CommandType{
 
     /// print all command help strings
     fn print_all_help(){
-        println!("{}",CommandType::Help.get_help_string().unwrap());
-        println!("{}",CommandType::Version.get_help_string().unwrap());
-        println!("{}",CommandType::Compile.get_help_string().unwrap());
-        println!("{}",CommandType::Binary.get_help_string().unwrap());
-        println!("{}",CommandType::Output.get_help_string().unwrap());
-        println!("{}",CommandType::Dump.get_help_string().unwrap());
-        println!("{}",CommandType::Tree.get_help_string().unwrap());
+        println!("{}",CommandType::Help.get_help_string());
+        println!("{}",CommandType::Version.get_help_string());
+        println!("{}",CommandType::Compile.get_help_string());
+        println!("{}",CommandType::Binary.get_help_string());
+        println!("{}",CommandType::Output.get_help_string());
+        println!("{}",CommandType::Dump.get_help_string());
+        println!("{}",CommandType::Tree.get_help_string());
     }
 
     /// get a formated help string for the CommandType
-    fn get_help_string(&self)->Option<String>{
+    fn get_help_string(&self)->String{
         match self{
-            CommandType::Help    =>{Some(format!("{:<25} {}","[-h | --help] <command>", "Output help information for specified command or all if none specified."))},
-            CommandType::Version =>{Some(format!("{:<25} {}","[-v | --version]", "Output current version information."))},
-            CommandType::Compile =>{Some(format!("{:<25} {}","[-c | --compile] <file>", "Compile the specified file. If no -o specified it it will output to same directory with same file-name."))},
-            CommandType::Output  =>{Some(format!("{:<25} {}","[-o | --output] <file>", "Set the output file of the Compiled program."))},
-            CommandType::Binary  =>{Some(format!("{:<25} {}","[-b | --binary]", "(Unsupported) Output the file as a binary instead of a logisim compatible file."))},
-            CommandType::Dump    =>{Some(format!("{:<25} {}","[-d | --dump]", "Output all tokens from the Compile target."))},
-            CommandType::Tree    =>{Some(format!("{:<25} {}","[-t | --tree]", "Output a statement heirchy of the Compile target."))},
-            _=>{None}
+            CommandType::Help    =>{format!("{:<25} {}","[-h | --help] <command>", "Output help information for specified command or all if none specified.")},
+            CommandType::Version =>{format!("{:<25} {}","[-v | --version]", "Output current version information.")},
+            CommandType::Compile =>{format!("{:<25} {}","[-c | --compile] <file>", "Compile the specified file. If no -o specified it it will output to same directory with same file-name.")},
+            CommandType::Output  =>{format!("{:<25} {}","[-o | --output] <file>", "Set the output file of the Compiled program.")},
+            CommandType::Binary  =>{format!("{:<25} {}","[-b | --binary]", "(Unsupported) Output the file as a binary instead of a logisim compatible file.")},
+            CommandType::Dump    =>{format!("{:<25} {}","[-d | --dump]", "Output all tokens from the Compile target.")},
+            CommandType::Tree    =>{format!("{:<25} {}","[-t | --tree]", "Output a statement heirchy of the Compile target.")},
         }
     }
 
@@ -148,6 +150,8 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
     let mut program : Option<Program> = None;
     let mut output : Option<path::PathBuf> = None;
     let mut binary : bool = false;
+    let mut dump_tokens : bool = false;
+    let mut show_tree : bool = false;
 
     while next_command != None{
 
@@ -177,7 +181,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
                     }
 
                     let tokens = lexer.tokenize(source.as_str())?;
-                    let mut inner_parser = parser::Parser::create(&tokens);
+                    let mut inner_parser = parser::Parser::create(tokens);
 
                     // println!("Tokens:");
                     // for token in &tokens{
@@ -229,7 +233,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
                 if let Some(arg) = &command.arg{
 
                     if let Some(t) = CommandType::get_type(arg,false){
-                        println!("{}",t.get_help_string().unwrap());
+                        println!("{}",t.get_help_string());
                     }else{
                         CommandType::print_all_help();
 
@@ -246,10 +250,12 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
                 binary = true;
             },
             CommandType::Dump =>{
-                // dump the tokens to console TODO: allow file output
+                // dump the tokens to console
+                dump_tokens = true;
             },
             CommandType::Tree =>{
                 // show the hierchy
+                show_tree = true;
             }
         }
         next_command = iter.next();
@@ -258,6 +264,17 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
     if let Some(p) = program{
         let mut options = OpenOptions::new();
         let mut file = swap_e(options.write(true).create(true).append(false).open(output.as_ref().unwrap()))?;
+
+        if dump_tokens{
+            println!("Tokens:\n");
+            for token in parser.as_ref().unwrap().get_tokens(){
+                println!("{}",token);
+            }
+        }
+
+        if show_tree{
+            println!("Parse Tree:\n{}",parser.as_ref().unwrap().root);
+        }
 
         let mut out = String::new();
 
@@ -325,6 +342,9 @@ pub fn parse_commands(commands :&mut Args)->Result<Vec<Command>,String>{
         }else{
 
             //no command found
+            println!("format: (ttpc) [COMMAND] <Argument>");
+            CommandType::print_all_help();
+            println!();
             return Err(format!("[{}] is not a valid command. use --help | -h for a list of valid commands.",command_str));
         }
 

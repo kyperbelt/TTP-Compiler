@@ -1,11 +1,6 @@
 mod compiler;
 mod cli;
 
-use compiler::parser::Parser;
-use compiler::lexer::Lexer;
-use compiler::Compiler;
-use cli::*;
-
 use std::env;
 
 

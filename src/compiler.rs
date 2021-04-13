@@ -508,6 +508,6 @@ pub fn error(message:String){
     eprintln!("Error: \n{}",message);
 }
 
-pub fn warning(message:String){
-    println!("Warning: \n{}",message);
-}
+// pub fn warning(message:String){
+//     println!("Warning: \n{}",message);
+// }

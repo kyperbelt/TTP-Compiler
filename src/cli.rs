@@ -26,14 +26,22 @@ pub enum CommandType{
 
 
 impl CommandType{
-    pub fn get_type(command: &str)->Option<CommandType>{
+    pub fn get_type(command: &str,require_prefix: bool)->Option<CommandType>{
         match command{
             "-v" | "--version"  =>{Some(CommandType::Version)},
             "-h" | "--help"     => {Some(CommandType::Help)},
             "-c" | "--compile"  =>{Some(CommandType::Compile)},
             "-o" | "--output"   =>{Some(CommandType::Output)},
-            "-b" | "--binary"   =>{Some(CommandType::Binary)}
-            _=>{None}
+            "-b" | "--binary"   =>{Some(CommandType::Binary)},
+            "-d" | "--dump"     =>{Some(CommandType::Dump)},
+            "-t" | "--tree"     =>{Some(CommandType::Tree)}
+            _=>{
+                if !require_prefix{
+                    CommandType::get_type_without_prefix(command)
+                }else{
+                    None
+                }
+            }
         }
     }
 
@@ -58,7 +66,46 @@ impl CommandType{
     pub fn get_dependencies(&self)->Option<&[CommandType]>{
         match self{
             CommandType::Output | CommandType::Binary |
-            CommandType::Tree   => {Some(&[CommandType::Compile])},
+            CommandType::Tree   | CommandType::Dump  => {Some(&[CommandType::Compile])},
+            _=>{None}
+        }
+    }
+
+    /// returns command type without the prefix
+    fn get_type_without_prefix(command : &str)->Option<CommandType>{
+        match command{
+            "v" | "version"  =>{Some(CommandType::Version)},
+            "h" | "help"     => {Some(CommandType::Help)},
+            "c" | "compile"  =>{Some(CommandType::Compile)},
+            "o" | "output"   =>{Some(CommandType::Output)},
+            "b" | "binary"   =>{Some(CommandType::Binary)},
+            "d" | "dump"     =>{Some(CommandType::Dump)},
+            "t" | "tree"     =>{Some(CommandType::Tree)}
+            _=>{None}
+        }
+    }
+
+    /// print all command help strings
+    fn print_all_help(){
+        println!("{}",CommandType::Help.get_help_string().unwrap());
+        println!("{}",CommandType::Version.get_help_string().unwrap());
+        println!("{}",CommandType::Compile.get_help_string().unwrap());
+        println!("{}",CommandType::Binary.get_help_string().unwrap());
+        println!("{}",CommandType::Output.get_help_string().unwrap());
+        println!("{}",CommandType::Dump.get_help_string().unwrap());
+        println!("{}",CommandType::Tree.get_help_string().unwrap());
+    }
+
+    /// get a formated help string for the CommandType
+    fn get_help_string(&self)->Option<String>{
+        match self{
+            CommandType::Help    =>{Some(format!("{:<25} {}","[-h | --help] <command>", "Output help information for specified command or all if none specified."))},
+            CommandType::Version =>{Some(format!("{:<25} {}","[-v | --version]", "Output current version information."))},
+            CommandType::Compile =>{Some(format!("{:<25} {}","[-c | --compile] <file>", "Compile the specified file. If no -o specified it it will output to same directory with same file-name."))},
+            CommandType::Output  =>{Some(format!("{:<25} {}","[-o | --output] <file>", "Set the output file of the Compiled program."))},
+            CommandType::Binary  =>{Some(format!("{:<25} {}","[-b | --binary]", "(Unsupported) Output the file as a binary instead of a logisim compatible file."))},
+            CommandType::Dump    =>{Some(format!("{:<25} {}","[-d | --dump]", "Output all tokens from the Compile target."))},
+            CommandType::Tree    =>{Some(format!("{:<25} {}","[-t | --tree]", "Output a statement heirchy of the Compile target."))},
             _=>{None}
         }
     }
@@ -176,7 +223,22 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
                 println!("[ttpc] by Jonathan Camarena 2021 - version {}", compiler::VERSION);
             },
             CommandType::Help =>{
+
+                println!("format: (ttpc) [COMMAND] <Argument>");
                 // display help for commands
+                if let Some(arg) = &command.arg{
+
+                    if let Some(t) = CommandType::get_type(arg,false){
+                        println!("{}",t.get_help_string().unwrap());
+                    }else{
+                        CommandType::print_all_help();
+
+                        println!("\n{} was not a recognized command!",arg);
+                    }
+
+                }else{
+                    CommandType::print_all_help();
+                }
 
             },
             CommandType::Binary=>{
@@ -201,6 +263,10 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
 
         if !binary{
             out.push_str("v2.0 raw\n"); // makes this compatible with Logisim v 2.7.1
+        }else{
+            // do we need to throw an error? probably not but meh
+            // TODO: add
+            return Err(format!("binary output is currently not supported."));
         }
         out.push_str(p.dump().as_str());
 
@@ -208,9 +274,9 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
             return Err(format!("unable to write to file!"))
         }
 
+        println!("compiled to file: {:?}" , output.unwrap().as_os_str());
     }
 
-    println!("compiled to file: {:?}" , output.unwrap().as_os_str());
 
     Ok(())
 }
@@ -221,7 +287,7 @@ pub fn parse_commands(commands :&mut Args)->Result<Vec<Command>,String>{
 
     let mut current = commands.next();
 
-    if current != None && CommandType::get_type(current.as_ref().unwrap())==None{
+    if current != None && CommandType::get_type(current.as_ref().unwrap(),true)==None{
         // this means we probably have an invalid command
         // or we have the program call as the 0th argument
 
@@ -231,7 +297,7 @@ pub fn parse_commands(commands :&mut Args)->Result<Vec<Command>,String>{
     while current!=None{
         let command_str : String = current.unwrap();
         let mut next = commands.next();
-        if let Some(command_type) = CommandType::get_type(&command_str){
+        if let Some(command_type) = CommandType::get_type(&command_str,true){
             let arg_count = command_type.get_arg_count();
             // println!("command found : {:?} -- arguments needed {}",command_type,arg_count);
 
@@ -239,7 +305,7 @@ pub fn parse_commands(commands :&mut Args)->Result<Vec<Command>,String>{
                 ret_commands.push(Command{command_type,arg:None});
             }else if arg_count == 1{
                 // expect an argument if next is not an argument we throw an error
-                if next == None || CommandType::get_type(next.as_ref().unwrap())!=None {
+                if next == None || CommandType::get_type(next.as_ref().unwrap(),true)!=None {
                     return Err(format!("Expected an argument for {:?} command",command_type));
                 }else{
                     ret_commands.push(Command{command_type,arg:Some(next.unwrap())});
@@ -248,7 +314,7 @@ pub fn parse_commands(commands :&mut Args)->Result<Vec<Command>,String>{
 
             }else if arg_count == -1 {
                 // we dont expect an argument but if we get one its ok
-                if next != None && CommandType::get_type(next.as_ref().unwrap()) == None{
+                if next != None && CommandType::get_type(next.as_ref().unwrap(),true) == None{
                     ret_commands.push(Command{command_type,arg:Some(next.unwrap())});
                     next = commands.next();
                 }else{

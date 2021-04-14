@@ -1,6 +1,5 @@
 
 use std::fmt;
-use crate::compiler::*;
 
 #[derive(Clone,PartialEq)]
 pub struct Token{
@@ -91,7 +90,9 @@ impl Lexer{
         let mut line_chars = line.chars();
         let mut current = line_chars.next();
 
+
         while current != None {
+            let mut next_token_set = false;
             col_number+=1;
             let current_char = current.unwrap();
             match self.current_state {
@@ -103,7 +104,7 @@ impl Lexer{
                         let col_start = col_number;
                         col_number+=1;
                         let mut next_char = line_chars.next();
-                        while next_char != None && next_char.unwrap()!=' '{
+                        while next_char != None && (next_char.unwrap().is_alphanumeric() || next_char.unwrap() == '_' || next_char.unwrap() == ':' ){
 
                             identifier.push(next_char.unwrap());
 
@@ -115,6 +116,9 @@ impl Lexer{
                             line_tokens.push(Token::create(TokenType::Label,line_number,col_start,identifier,self.current_state));
 
                         }else{ //op
+
+                            // FIXME: code should never be reached because once we find the first mnemonic we switch to Operand state
+                            //        which allows more identifiers
                             if line_tokens.len() >= 1 {
                                 return Err(format!("Too many op mnemonics in line:{}",line_number));
                             }
@@ -130,8 +134,7 @@ impl Lexer{
                             return Err(format!("Error: Expected '/' on line:{} col:{}",line_number,col_number+1));
                         }
                     }else{
-                        error(format!("Invalid identifier on line:{} col:{}",line_number,col_number));
-                        std::process::exit(1);
+                        return Err(format!("Invalid identifier on line:{} col:{}",line_number,col_number));
                     }
 
                 },
@@ -178,7 +181,7 @@ impl Lexer{
                         '.'=>{line_tokens.push(Token::create(TokenType::Dot,line_number,col_number,String::from(current_char),self.current_state));},
                         ' '=>{}, // skip
                         _=>{
-                            if current_char.is_alphabetic() || current_char == '_'{ // could be register
+                            if (current_char.is_alphabetic() || current_char == '_') && current_char!= ' '{ // could be register
 
                                 let mut identifier = String::from(current_char);
                                 let start_col = col_number;
@@ -186,18 +189,21 @@ impl Lexer{
 
                                 col_number+=1;
 
-                                if next == None || next == Some(',') || next == Some(' ') || next == Some('\n'){
+                                if next == None || next == Some(',') || next == Some(' ') || next == Some('\n') || next == Some('/') || next == Some('\t'){
 
+                                    // println!("next after register[{}] at(line:{} - col:{}) is {:?}",current_char,line_number,col_number,next);
                                     // NOTE: This compiler will not allow the use of register names as labels
                                     if let 'a' | 'b' | 'c' | 'd' = current_char {
                                         line_tokens.push(Token::create(TokenType::Reg,line_number,start_col,identifier,self.current_state));
-                                        if let Some(',') = next{
-                                            line_tokens.push(Token::create(TokenType::Comma,line_number,col_number,String::from(','),self.current_state));
-                                        }
+
                                     }else{
                                       //single letter idenfifier
                                       line_tokens.push(Token::create(TokenType::Identifier,line_number,start_col,identifier,self.current_state));
                                     }
+
+                                    // push next token
+                                    next_token_set = true;
+                                    current = next;
                                 }else{
                                     //label identifier
                                     while next != None && (next.unwrap().is_alphanumeric() || next.unwrap() == '_'){
@@ -206,6 +212,9 @@ impl Lexer{
                                         next = line_chars.next();
                                         col_number+=1;
                                     }
+                                    // push next
+                                    next_token_set = true;
+                                    current = next;
                                     line_tokens.push(Token::create(TokenType::Identifier,line_number,start_col,identifier,self.current_state));
 
                                 }
@@ -214,17 +223,16 @@ impl Lexer{
                                 let mut next = line_chars.next();
                                 let start_col = col_number;
                                 col_number+=1;
-                                while next != None && next.unwrap() != ' '{
+                                while next != None && next.unwrap().is_numeric(){
                                     let digit = next.unwrap();
-                                    if digit.is_numeric(){
-                                        number.push(digit);
-                                    }else{
-                                        return Err(format!("Expected Numeric Value on line:{} - col:{}", line_number,col_number));
-
-                                    }
+                                    number.push(digit);
                                     next = line_chars.next();
                                     col_number+=1;
                                 }
+
+                                // set next token
+                                next_token_set = true;
+                                current = next;
 
                                 line_tokens.push(Token::create(TokenType::Number,line_number,start_col,number,self.current_state));
                             }
@@ -234,8 +242,9 @@ impl Lexer{
 
             }
 
-
-            current = line_chars.next();
+            if !next_token_set{
+                current = line_chars.next();
+            }
         }
 
        Ok(line_tokens)

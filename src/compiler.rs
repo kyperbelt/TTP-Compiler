@@ -474,7 +474,7 @@ impl Compiler{
                         Ok(info.addr)
                     }
                 }else{
-                    Err(format!("Label:[{}] referenced at line:{} not found.",expression.value,expression.line()))
+                    Err(format!("Label:[{}] referenced at line:{} col:{} not found.",expression.value,expression.line(),expression.col()))
                 }
             },
             ExpressionType::Value=>{

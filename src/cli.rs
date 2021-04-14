@@ -198,12 +198,21 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
                     }
 
 
-                    let inner_program = compiler::Compiler::compile(root.unwrap())?;
+                    let inner_program = compiler::Compiler::compile(root.unwrap());
+                    if let Err(some) = inner_program{
+                        if dump_tokens {
+                            println!("Tokens:\n");
+                            for token in inner_parser.get_tokens(){
+                                println!("{}",token);
+                            }
+                        }
+                        return Err(some);
+                    }
 
                     // println!("{}",inner_program.dump());
 
                     parser = Some(inner_parser);
-                    program = Some(inner_program);
+                    program = Some(inner_program.unwrap());
 
                     let stem = in_path.file_stem().unwrap();
                     let mut out_path = path::PathBuf::from(in_path.as_os_str());

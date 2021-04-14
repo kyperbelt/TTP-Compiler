@@ -29,7 +29,7 @@ impl CommandType{
     pub fn get_type(command: &str,require_prefix: bool)->Option<CommandType>{
         match command{
             "-v" | "--version"  =>{Some(CommandType::Version)},
-            "-h" | "--help"     => {Some(CommandType::Help)},
+            "-h" | "--help"     =>{Some(CommandType::Help)},
             "-c" | "--compile"  =>{Some(CommandType::Compile)},
             "-o" | "--output"   =>{Some(CommandType::Output)},
             "-b" | "--binary"   =>{Some(CommandType::Binary)},
@@ -47,7 +47,8 @@ impl CommandType{
 
     pub fn get_priority(&self)->usize{
         match self{
-            CommandType::Compile => {10},
+            CommandType::Compile => {50},
+            CommandType::Dump  | CommandType :: Tree => {40}
             _=>{100}
         }
     }
@@ -181,17 +182,23 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
                     }
 
                     let tokens = lexer.tokenize(source.as_str())?;
+
                     let mut inner_parser = parser::Parser::create(tokens);
 
-                    // println!("Tokens:");
-                    // for token in &tokens{
-                    //     println!("{}",token);
-                    // }
 
-                    let root = inner_parser.generate()?;
+                    let root = inner_parser.generate();
+                    if let Err(some) = root{
+                        if dump_tokens {
+                            println!("Tokens:\n");
+                            for token in inner_parser.get_tokens(){
+                                println!("{}",token);
+                            }
+                        }
+                        return Err(some);
+                    }
 
 
-                    let inner_program = compiler::Compiler::compile(root)?;
+                    let inner_program = compiler::Compiler::compile(root.unwrap())?;
 
                     // println!("{}",inner_program.dump());
 

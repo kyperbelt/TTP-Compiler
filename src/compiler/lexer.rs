@@ -178,7 +178,7 @@ impl Lexer{
                         '.'=>{line_tokens.push(Token::create(TokenType::Dot,line_number,col_number,String::from(current_char),self.current_state));},
                         ' '=>{}, // skip
                         _=>{
-                            if current_char.is_alphabetic() { // could be register
+                            if current_char.is_alphabetic() || current_char == '_'{ // could be register
 
                                 let mut identifier = String::from(current_char);
                                 let start_col = col_number;
@@ -200,7 +200,7 @@ impl Lexer{
                                     }
                                 }else{
                                     //label identifier
-                                    while next != None && next.unwrap().is_alphanumeric(){
+                                    while next != None && (next.unwrap().is_alphanumeric() || next.unwrap() == '_'){
                                         let c = next.unwrap();
                                         identifier.push(c);
                                         next = line_chars.next();

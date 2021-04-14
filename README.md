@@ -2,7 +2,7 @@
 A compiler/assembler for files written in .ttpasm to work with "Tak's Toy Processor". 
 
 ## Contents
-* [Build](#how-to-buid)
+* [Build](#how-to-build)
 * [Getting Started](#getting-started)
 * [Tips](#tips)
 * [Todo](#todo)

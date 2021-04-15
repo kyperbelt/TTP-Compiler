@@ -98,8 +98,7 @@ impl Lexer{
             match self.current_state {
                 LexerState::Base =>{
 
-                    if current_char == ' '{
-                    }else if current_char.is_alphabetic() {
+                    if current_char.is_alphabetic() {
                         let mut identifier = String::from(current_char);
                         let col_start = col_number;
                         col_number+=1;
@@ -124,17 +123,23 @@ impl Lexer{
                             }
                             line_tokens.push(Token::create(TokenType::Op,line_number,col_start,identifier,self.current_state));
                         }
-                            self.current_state = LexerState::Operand;
+
+                        self.current_state = LexerState::Operand;
+
                     }else if current_char == '/'{
 
                         // check if valid comment
                         if let Some('/') = line_chars.next(){
                             break; // valid comment so we skip the rest of the line
                         }else{
-                            return Err(format!("Error: Expected '/' on line:{} col:{}",line_number,col_number+1));
+                            return Err(format!("Expected '/' on line:{} col:{}",line_number,col_number+1));
                         }
+                    }else if current_char.is_numeric(){
+
+                        // shouldnt be a numnber?
+                        return Err(format!("[Op codes or Labels cannot start with a number] at line:{} col:{}",line_number,col_number))
                     }else{
-                        return Err(format!("Invalid identifier on line:{} col:{}",line_number,col_number));
+                        // skip rest including line endings
                     }
 
                 },
@@ -152,7 +157,7 @@ impl Lexer{
                                         col_number+=2; //we advance the col counter to conpensate
                                         // self.current_state = LexerState::Base;
                                     }else{
-                                        return Err(format!("Expected \')\' after pointer register identifier line:{} - col:{}",line_number,col_number));
+                                        return Err(format!("Expected ')' after pointer register identifier line:{} - col:{}",line_number,col_number));
                                     }
 
 

@@ -194,7 +194,7 @@ impl Lexer{
 
                                 col_number+=1;
 
-                                if next == None || next == Some(',') || next == Some(' ') || next == Some('\n') || next == Some('/') || next == Some('\t'){
+                                if next == None || next == Some(',') || next == Some(' ') || next == Some('\n') || next == Some('/') || next == Some('\t') || next == Some('\r'){
 
                                     // println!("next after register[{}] at(line:{} - col:{}) is {:?}",current_char,line_number,col_number,next);
                                     // NOTE: This compiler will not allow the use of register names as labels

@@ -279,7 +279,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
 
     if let Some(p) = program{
         let mut options = OpenOptions::new();
-        let mut file = swap_e(options.write(true).create(true).append(false).open(output.as_ref().unwrap()))?;
+        let mut file = swap_e(options.write(true).create(true).truncate(true).append(false).open(output.as_ref().unwrap()))?;
 
         if dump_tokens{
             println!("Tokens:\n");

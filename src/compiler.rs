@@ -198,17 +198,17 @@ impl Program{
 pub struct Compiler{}
 impl Compiler{
 
-    pub fn compile(root: &RootNode)->Result<Program, String>{
+    pub fn compile(strict: bool,root: &RootNode)->Result<Program, String>{
         let mut labels : Vec<LabelInfo> = Vec::new();
         let mut program = Program{instructions:Vec::new()};
 
         // gather all labels on first pass of parse tree
-        Compiler::gather_labels(&root.statements,&mut labels);
+        Compiler::gather_labels(strict,&root.statements,&mut labels)?;
 
         // go through all statements and convert them to instructions in second pass
         for statement in &root.statements{
             // compile the satement but return early if an error occur
-            Compiler::compile_statement(&statement,&mut program, &mut labels)?;
+            Compiler::compile_statement(strict,&statement,&mut program, &mut labels)?;
         }
         Ok(program)
     }
@@ -216,7 +216,7 @@ impl Compiler{
     /// compile a statement into an instruction if it is an operation
     /// otherwise it is a label and we submit to the labels list
     /// @return an error if unable to compile statement
-    fn compile_statement(statement : &parser::Statement,program : &mut Program, labels : &mut Vec<LabelInfo>)->Result<(),String>{
+    fn compile_statement(strict : bool,statement : &parser::Statement,program : &mut Program, labels : &mut Vec<LabelInfo>)->Result<(),String>{
 
         if statement.statement_type == parser::StatementType::Operation{
             //TODO: create a getBitPatten function for operations to lower code reuse
@@ -230,39 +230,39 @@ impl Compiler{
 
                 },
                 Ops::Byte =>{
-                    program.instructions.push(Instruction::create(op,Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?));
+                    program.instructions.push(Instruction::create(op,Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?));
                 },
                 Ops::Jumpi =>{
                     program.instructions.push(Instruction::create(op,0b0100_0000));
-                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?));
+                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?));
                 },
                 Ops::JumpLessi =>{
                     program.instructions.push(Instruction::create(op,0b0100_0001));
-                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?));
+                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?));
                 },
                 Ops::JumpOverflowi =>{
                     program.instructions.push(Instruction::create(op,0b0100_0010));
-                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?));
+                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?));
                 },
                 Ops::JumpSigni =>{
                     program.instructions.push(Instruction::create(op,0b0100_0011));
-                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?));
+                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?));
                 },
                 Ops::JumpCarryi =>{
                     program.instructions.push(Instruction::create(op,0b0100_0100));
-                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?));
+                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?));
 
                 },
                 Ops::JumpZeroi =>{
 
                     program.instructions.push(Instruction::create(op,0b0100_0101));
-                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?));
+                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?));
 
                   
                 },
                 Ops::CopyReg =>{
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
-                    let arg2 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[1],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg2 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[1],labels)?;
 
                     let op_code = 0b0101_0000 | arg1 | arg2;
                     program.instructions.push(Instruction::create(op,op_code));
@@ -270,128 +270,128 @@ impl Compiler{
 
                 },
                 Ops::JumpLess =>{
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?;
                     let op_code = 0b0110_0000 | arg1;
 
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::JumpOverflow =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?;
                     let op_code = 0b0110_0100 | arg1;
 
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::JumpSign =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?;
                     let op_code = 0b0110_1000 | arg1;
 
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::Loadi =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?;
                     let op_code = 0b0110_1100 | arg1;
 
                     program.instructions.push(Instruction::create(op,op_code));
-                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[1],labels)?));
+                    program.instructions.push(Instruction::create(Ops::Byte,Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[1],labels)?));
 
                 },
                 Ops::Load =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
-                    let arg2 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[1],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg2 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[1],labels)?;
 
                     let op_code = 0b0111_0000 | arg1 | arg2;
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::Add =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
-                    let arg2 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[1],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg2 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[1],labels)?;
 
                     let op_code = 0b1000_0000 | arg1 | arg2;
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::Sub =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
-                    let arg2 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[1],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg2 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[1],labels)?;
 
                     let op_code = 0b1001_0000 | arg1 | arg2;
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::RightShift =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
-                    let arg2 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[1],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg2 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[1],labels)?;
 
                     let op_code = 0b1010_0000 | arg1 | arg2;
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::Not =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
                     let op_code = 0b1011_0000 | arg1;
 
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::Jump =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
                     let op_code = 0b1011_0001 | arg1;
 
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::JumpCarry =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
                     let op_code = 0b1011_0010 | arg1;
 
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::JumpZero =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
                     let op_code = 0b1011_0011 | arg1;
 
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::And =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
-                    let arg2 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[1],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg2 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[1],labels)?;
 
                     let op_code = 0b1100_0000 | arg1 | arg2;
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::Or =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
-                    let arg2 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[1],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg2 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[1],labels)?;
 
                     let op_code = 0b1101_0000 | arg1 | arg2;
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::Compare =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)? << 2;
-                    let arg2 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[1],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)? << 2;
+                    let arg2 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[1],labels)?;
 
                     let op_code = 0b1110_0000 | arg1 | arg2;
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::Store =>{
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?;
-                    let arg2 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[1],labels)? << 2;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?;
+                    let arg2 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[1],labels)? << 2;
 
                     let op_code = 0b1111_0000 | arg1 | arg2;
                     program.instructions.push(Instruction::create(op,op_code));
                 },
                 Ops::Increment =>{
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?;
                     let arg2 = arg1 << 2;
                     let op_code = 0b1101_0000 | arg1 | arg2;
 
@@ -400,7 +400,7 @@ impl Compiler{
                 Ops::Decrement =>{
 
 
-                    let arg1 = Compiler::evaluate_expression(statement.byte_addr,&statement.expressions[0],labels)?;
+                    let arg1 = Compiler::evaluate_expression(strict,statement.byte_addr,&statement.expressions[0],labels)?;
                     let arg2 = arg1 << 2;
                     let op_code = 0b1110_0000 | arg1 | arg2;
 
@@ -413,33 +413,45 @@ impl Compiler{
         Ok(())
     }
 
-    fn gather_labels<'a>(statements: &'a [Statement], labels : &mut Vec<LabelInfo<'a>>){
+    fn gather_labels<'a>(strict : bool,statements: &'a [Statement], labels : &mut Vec<LabelInfo<'a>>)->Result<(),String>{
         for statement in statements{
             if statement.statement_type == StatementType::Label{
                 let mut expression : Option<&'a Expression> = None;
                 if statement.expressions.len() > 0 {
                     expression = Some(&statement.expressions[0]);
                 }
+
+                // check if we already have the label in the labels list
+                // to prevent duplicate labels.
+                let check = Compiler::get_label(strict,statement.value.as_str(),labels);
+
+                if let Some(_) = check{
+                    return Err(format!("duplicate label [{}] at line:{} col:{}\nTry running in strict mode if you are trying to use case sensitive labels."
+                                       ,statement.value.as_str(),statement.line(),statement.col()))
+                }
                 labels.push(LabelInfo{label: String::from(statement.value.as_str()), addr: statement.byte_addr,expression});
+
             }
         }
+
+        Ok(())
     }
 
     /// evaluate an expression and reduce it to a single 8bit value
-    fn evaluate_expression(byte_addr: u8,expression : &parser::Expression,labels : &[LabelInfo])->Result<u8,String>{
+    fn evaluate_expression(strict : bool,byte_addr: u8,expression : &parser::Expression,labels : &[LabelInfo])->Result<u8,String>{
         match expression.expression_type{
             ExpressionType::Equation => {
                 let mut result = std::num::Wrapping(0u8);
                 if expression.value == "+" {
                     // add
                     for sub_exp in &expression.expressions{
-                        result+=std::num::Wrapping::<u8>(Compiler::evaluate_expression(byte_addr,sub_exp,labels)?);
+                        result+=std::num::Wrapping::<u8>(Compiler::evaluate_expression(strict,byte_addr,sub_exp,labels)?);
                     }
 
                 }else{
                     // subtract
                     for sub_exp in &expression.expressions{
-                        result+=std::num::Wrapping::<u8>(Compiler::evaluate_expression(byte_addr,sub_exp,labels)?);
+                        result+=std::num::Wrapping::<u8>(Compiler::evaluate_expression(strict,byte_addr,sub_exp,labels)?);
                     }
 
                 }
@@ -464,11 +476,11 @@ impl Compiler{
                 let mut query = String::new();
                 query.push_str(expression.value.as_str());
                 query.push(':');
-                if let Some(info) = Compiler::get_label(query.as_str(), labels){
+                if let Some(info) = Compiler::get_label(strict,query.as_str(), labels){
 
                     if let Some(label_exp) = info.expression{
 
-                        Ok(Compiler::evaluate_expression(byte_addr,label_exp,labels)?)
+                        Ok(Compiler::evaluate_expression(strict,byte_addr,label_exp,labels)?)
                     }else{
 
                         Ok(info.addr)
@@ -490,11 +502,13 @@ impl Compiler{
     }
 
 
-    fn get_label<'a,'b>(label : &str, labels :&'a [LabelInfo])->Option<&'b LabelInfo<'a>>{
-
+    fn get_label<'a,'b>(strict : bool,label : &str, labels :&'a [LabelInfo])->Option<&'b LabelInfo<'a>>{
         for info in labels{
-            if info.label == label {
+            if strict &&  info.label.as_str() == label {
+
                 return Some(&info);
+            }else if !strict && info.label.to_lowercase() == label.to_lowercase() {
+                return Some(&info)
             }
         }
 

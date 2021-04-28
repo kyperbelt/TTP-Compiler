@@ -1,6 +1,9 @@
 
 use std::fmt;
 
+use super::Ops;
+
+
 #[derive(Clone,PartialEq)]
 pub struct Token{
     pub token_type : TokenType,
@@ -56,7 +59,6 @@ impl fmt::Display for LexerState{
 
 pub struct Lexer{
     current_state :  LexerState,
-
 }
 
 impl Lexer{
@@ -65,14 +67,14 @@ impl Lexer{
         Lexer{current_state:LexerState::Base}
     }
 
-    pub fn tokenize(&mut self, input : &str)->Result<Vec<Token>,String>{
+    pub fn tokenize(&mut self,strict: bool, input : &str)->Result<Vec<Token>,String>{
         let mut line_number = 0;
         let mut tokens = Vec::new();
         let input_string = String::from(input);
 
         for line in input_string.split('\n'){
             line_number+=1;
-            let line_tokens = self.scan_line(&String::from(line),line_number)?;
+            let line_tokens = self.scan_line(strict,&String::from(line),line_number)?;
             tokens.extend(line_tokens);
         }
         tokens.push(Token::create(TokenType::Eof,line_number+1,1,String::from("EOF"),self.current_state));
@@ -80,7 +82,7 @@ impl Lexer{
         Ok(tokens)
     }
 
-    fn scan_line(&mut self, line : &String, line_number : u32)->Result<Vec<Token>,String>{
+    fn scan_line(&mut self,strict: bool, line : &String, line_number : u32)->Result<Vec<Token>,String>{
         // reset state to Base for each line since multiline
         // operations are not possible
         self.current_state = LexerState::Base;
@@ -89,6 +91,8 @@ impl Lexer{
 
         let mut line_chars = line.chars();
         let mut current = line_chars.next();
+
+        let mut line_op : Option<crate::compiler::Ops> = None;
 
 
         while current != None {
@@ -121,7 +125,11 @@ impl Lexer{
                             if line_tokens.len() >= 1 {
                                 return Err(format!("Too many op mnemonics in line:{}",line_number));
                             }
+
+                            // cache the op for this line
+                            line_op =  Ops::get_op(identifier.as_str());
                             line_tokens.push(Token::create(TokenType::Op,line_number,col_start,identifier,self.current_state));
+
                         }
 
                         self.current_state = LexerState::Operand;
@@ -149,6 +157,8 @@ impl Lexer{
                         '(' =>{ //register pointer begin
                             if let Some(c) = line_chars.next(){
                                 if let 'a' | 'b' | 'c' | 'd' = c {
+
+
 
                                     if let Some(')') = line_chars.next(){
                                         // we found a valid register in the form (x)
@@ -196,10 +206,50 @@ impl Lexer{
 
                                 if next == None || next == Some(',') || next == Some(' ') || next == Some('\n') || next == Some('/') || next == Some('\t') || next == Some('\r'){
 
-                                    // println!("next after register[{}] at(line:{} - col:{}) is {:?}",current_char,line_number,col_number,next);
-                                    // NOTE: This compiler will not allow the use of register names as labels
+                                    // NOTE: This compiler will not allow the use of register names as labels when using strict mode
                                     if let 'a' | 'b' | 'c' | 'd' = current_char {
-                                        line_tokens.push(Token::create(TokenType::Reg,line_number,start_col,identifier,self.current_state));
+
+                                          // if line op has 2 bytes
+                                          // and line op has 1 parameter - its an identifier
+                                          // but if line op has 2 parameters and last token was not an op then it is also an identifier
+                                          // else its a register
+                                        if let Some(op) = line_op{
+                                            let byte_count = op.get_byte_count();
+                                            let param_count = op.get_op_param_count();
+                                            if byte_count >= 2 {
+                                                if param_count == 1 {
+
+                                                    if strict {
+                                                        return Err(format!("Strict Mode : label identifier[{}] cannot be a register letter at line:{} col:{}",identifier,line_number,start_col))
+                                                    }
+                                                    line_tokens.push(Token::create(TokenType::Identifier,line_number,start_col,identifier,self.current_state));
+                                                }else if param_count >= 2{
+                                                    let last_token = line_tokens.last();
+                                                    if let Some(last) = last_token{
+                                                        if let TokenType::Op = last.token_type{
+                                                            // its a register because it its right after an op
+
+                                                            line_tokens.push(Token::create(TokenType::Reg,line_number,start_col,identifier,self.current_state));
+                                                        }else{
+
+                                                            if strict {
+                                                                return Err(format!("Strict Mode : label identifier[{}] cannot be a register letter at line:{} col:{}",identifier,line_number,start_col))
+                                                            }
+                                                            line_tokens.push(Token::create(TokenType::Identifier,line_number,start_col,identifier,self.current_state));
+                                                        }
+                                                    }
+                                                }else{
+
+                                                    line_tokens.push(Token::create(TokenType::Reg,line_number,start_col,identifier,self.current_state));
+                                                }
+                                            }
+                                        }else{
+                                            // this is following a label so the only possibility is an identifier
+                                            if strict {
+                                                return Err(format!("Strict Mode : label identifier[{}] cannot be a register letter at line:{} col:{}",identifier,line_number,start_col))
+                                            }
+                                            line_tokens.push(Token::create(TokenType::Identifier,line_number,start_col,identifier,self.current_state));
+                                        }
 
                                     }else{
                                       //single letter idenfifier

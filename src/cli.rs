@@ -19,7 +19,8 @@ pub enum CommandType{
     Output,             // set the output file
     Binary,             // set if binary output (off by default)
     Dump,               // dump the tokens
-    Tree                // show the hierchy
+    Tree,               // show the hierchy
+    Strict              // strict mode to not allow registers are labels and also becomes case sensitive
     // Analyze TODO: create a vm to run analysis on
 }
 
@@ -34,7 +35,8 @@ impl CommandType{
             "-o" | "--output"   =>{Some(CommandType::Output)},
             "-b" | "--binary"   =>{Some(CommandType::Binary)},
             "-d" | "--dump"     =>{Some(CommandType::Dump)},
-            "-t" | "--tree"     =>{Some(CommandType::Tree)}
+            "-t" | "--tree"     =>{Some(CommandType::Tree)},
+            "-s" | "--strict"   =>{Some(CommandType::Strict)}
             _=>{
                 if !require_prefix{
                     CommandType::get_type_without_prefix(command)
@@ -45,10 +47,13 @@ impl CommandType{
         }
     }
 
+    /// get
     pub fn get_priority(&self)->usize{
         match self{
             CommandType::Compile => {50},
-            CommandType::Dump  | CommandType :: Tree => {40}
+            CommandType::Dump   |
+            CommandType::Tree   |
+            CommandType::Strict => {40}
             _=>{100}
         }
     }
@@ -58,6 +63,7 @@ impl CommandType{
             CommandType::Version    |
             CommandType::Binary     |
             CommandType::Dump       |
+            CommandType::Strict     |
             CommandType::Tree =>{0},
             CommandType::Help =>{-1} //variable size
             _=>{1}
@@ -70,7 +76,8 @@ impl CommandType{
     pub fn get_dependencies(&self)->Option<&[CommandType]>{
         match self{
             CommandType::Output | CommandType::Binary |
-            CommandType::Tree   | CommandType::Dump  => {Some(&[CommandType::Compile])},
+            CommandType::Tree   | CommandType::Dump   |
+            CommandType::Strict => {Some(&[CommandType::Compile])},
             _=>{None}
         }
     }
@@ -85,6 +92,7 @@ impl CommandType{
             "b" | "binary"   =>{Some(CommandType::Binary)},
             "d" | "dump"     =>{Some(CommandType::Dump)},
             "t" | "tree"     =>{Some(CommandType::Tree)}
+            "s" | "strict"     =>{Some(CommandType::Strict)}
             _=>{None}
         }
     }
@@ -98,6 +106,7 @@ impl CommandType{
         println!("{}",CommandType::Output.get_help_string());
         println!("{}",CommandType::Dump.get_help_string());
         println!("{}",CommandType::Tree.get_help_string());
+        println!("{}",CommandType::Strict.get_help_string());
     }
 
     /// get a formated help string for the CommandType
@@ -105,11 +114,12 @@ impl CommandType{
         match self{
             CommandType::Help    =>{format!("{:<25} {}","[-h | --help] <command>", "Output help information for specified command or all if none specified.")},
             CommandType::Version =>{format!("{:<25} {}","[-v | --version]", "Output current version information.")},
-            CommandType::Compile =>{format!("{:<25} {}","[-c | --compile] <file>", "Compile the specified file. If no -o specified it it will output to same directory with same file-name.")},
+            CommandType::Compile =>{format!("{:<25} {}","[-c | --compile] <file>", format!("Compile the specified file. If no -o specified it it will output\n{:>25} to same directory with same file-name.",""))},
             CommandType::Output  =>{format!("{:<25} {}","[-o | --output] <file>", "Set the output file of the Compiled program.")},
             CommandType::Binary  =>{format!("{:<25} {}","[-b | --binary]", "(Unsupported) Output the file as a binary instead of a logisim compatible file.")},
             CommandType::Dump    =>{format!("{:<25} {}","[-d | --dump]", "Output all tokens from the Compile target.")},
             CommandType::Tree    =>{format!("{:<25} {}","[-t | --tree]", "Output a statement heirchy of the Compile target.")},
+            CommandType::Strict  =>{format!("{:<25} {}","[-s | --strict]", "Strict mode no register identifiers as labels and is case sensitive.")},
         }
     }
 
@@ -153,6 +163,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
     let mut binary : bool = false;
     let mut dump_tokens : bool = false;
     let mut show_tree : bool = false;
+    let mut strict : bool =  false;
 
     while next_command != None{
 
@@ -181,7 +192,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
                         return Err(format!("Unable to read file."));
                     }
 
-                    let tokens = lexer.tokenize(source.as_str())?;
+                    let tokens = lexer.tokenize(strict,source.as_str())?;
 
                     let mut inner_parser = parser::Parser::create(tokens);
 
@@ -198,7 +209,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
                     }
 
 
-                    let inner_program = compiler::Compiler::compile(root.unwrap());
+                    let inner_program = compiler::Compiler::compile(strict,root.unwrap());
                     if let Err(some) = inner_program{
                         if dump_tokens {
                             println!("Tokens:\n");
@@ -272,6 +283,10 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
             CommandType::Tree =>{
                 // show the hierchy
                 show_tree = true;
+            },
+            CommandType::Strict =>{
+                // apply strict rules
+                strict = true;
             }
         }
         next_command = iter.next();

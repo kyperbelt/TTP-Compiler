@@ -99,27 +99,27 @@ impl CommandType{
 
     /// print all command help strings
     fn print_all_help(){
-        println!("{}",CommandType::Help.get_help_string());
-        println!("{}",CommandType::Version.get_help_string());
-        println!("{}",CommandType::Compile.get_help_string());
-        println!("{}",CommandType::Binary.get_help_string());
-        println!("{}",CommandType::Output.get_help_string());
-        println!("{}",CommandType::Dump.get_help_string());
-        println!("{}",CommandType::Tree.get_help_string());
-        println!("{}",CommandType::Strict.get_help_string());
+        println!("{}\n",CommandType::Help.get_help_string());
+        println!("{}\n",CommandType::Version.get_help_string());
+        println!("{}\n",CommandType::Compile.get_help_string());
+        println!("{}\n",CommandType::Binary.get_help_string());
+        println!("{}\n",CommandType::Output.get_help_string());
+        println!("{}\n",CommandType::Dump.get_help_string());
+        println!("{}\n",CommandType::Tree.get_help_string());
+        println!("{}\n",CommandType::Strict.get_help_string());
     }
 
     /// get a formated help string for the CommandType
     fn get_help_string(&self)->String{
         match self{
-            CommandType::Help    =>{format!("{:<25} {}","[-h | --help] <command>", "Output help information for specified command or all if none specified.")},
+            CommandType::Help    =>{format!("{:<25} {}\n{:<25}{}","[-h | --help] <command>", "Output help information for specified command",""," or all if none specified.")},
             CommandType::Version =>{format!("{:<25} {}","[-v | --version]", "Output current version information.")},
-            CommandType::Compile =>{format!("{:<25} {}","[-c | --compile] <file>", format!("Compile the specified file. If no -o specified it it will output\n{:>25} to same directory with same file-name.",""))},
+            CommandType::Compile =>{format!("{:<25} {}\n{:<25}{}","[-c | --compile] <file>", "Compile the specified file. If no -o specified it",""," will output to same directory with same file-name.")},
             CommandType::Output  =>{format!("{:<25} {}","[-o | --output] <file>", "Set the output file of the Compiled program.")},
-            CommandType::Binary  =>{format!("{:<25} {}","[-b | --binary]", "(Unsupported) Output the file as a binary instead of a logisim compatible file.")},
+            CommandType::Binary  =>{format!("{:<25} {}\n{:<25}{}","[-b | --binary]", "(Unsupported) Output the file as a binary instead",""," of a logisim compatible file.")},
             CommandType::Dump    =>{format!("{:<25} {}","[-d | --dump]", "Output all tokens from the Compile target.")},
             CommandType::Tree    =>{format!("{:<25} {}","[-t | --tree]", "Output a statement heirchy of the Compile target.")},
-            CommandType::Strict  =>{format!("{:<25} {}","[-s | --strict]", "Strict mode no register identifiers as labels and is case sensitive.")},
+            CommandType::Strict  =>{format!("{:<25} {}\n{:<25}{}","[-s | --strict]", "Strict flag | no register identifiers as labels and",""," everything is case sensitive.")},
         }
     }
 

@@ -140,7 +140,7 @@ impl Lexer{
                         if let Some('/') = line_chars.next(){
                             break; // valid comment so we skip the rest of the line
                         }else{
-                            return Err(format!("Expected '/' on line:{} col:{}",line_number,col_number+1));
+                            return Err(format!("Expected [/] on line:{} col:{}",line_number,col_number+1));
                         }
                     }else if current_char.is_numeric(){
 
@@ -167,7 +167,7 @@ impl Lexer{
                                         col_number+=2; //we advance the col counter to conpensate
                                         // self.current_state = LexerState::Base;
                                     }else{
-                                        return Err(format!("Expected ')' after pointer register identifier line:{} - col:{}",line_number,col_number));
+                                        return Err(format!("Expected [)] after pointer register identifier line:{} - col:{}",line_number,col_number));
                                     }
 
 
@@ -188,7 +188,7 @@ impl Lexer{
                                 break; // valid comment so we skip the rest of the line
                             }else{
                                 //panic for now but probably do something else later
-                                return Err(format!("Error: Expected '/' on line:{} col:{}",line_number,col_number+1));
+                                return Err(format!("Error: Expected [/] on line:{} col:{}",line_number,col_number+1));
                             }
                         },
                         '+'=>{line_tokens.push(Token::create(TokenType::Plus,line_number,col_number,String::from(current_char),self.current_state));},
@@ -216,7 +216,11 @@ impl Lexer{
                                         if let Some(op) = line_op{
                                             let byte_count = op.get_byte_count();
                                             let param_count = op.get_op_param_count();
-                                            if byte_count >= 2 {
+                                            if op == Ops::Byte {
+
+                                                line_tokens.push(Token::create(TokenType::Identifier,line_number,start_col,identifier,self.current_state));
+                                            }
+                                            else if byte_count >= 2 {
                                                 if param_count == 1 {
 
                                                     if strict {
@@ -242,6 +246,9 @@ impl Lexer{
 
                                                     line_tokens.push(Token::create(TokenType::Reg,line_number,start_col,identifier,self.current_state));
                                                 }
+                                            }else{
+
+                                                line_tokens.push(Token::create(TokenType::Reg,line_number,start_col,identifier,self.current_state));
                                             }
                                         }else{
                                             // this is following a label so the only possibility is an identifier

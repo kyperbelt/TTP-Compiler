@@ -218,6 +218,9 @@ impl Lexer{
                                             let param_count = op.get_op_param_count();
                                             if op == Ops::Byte {
 
+                                                if strict {
+                                                    return Err(format!("Strict Mode : label identifier[{}] cannot be a register letter at line:{} col:{}",identifier,line_number,start_col))
+                                                }
                                                 line_tokens.push(Token::create(TokenType::Identifier,line_number,start_col,identifier,self.current_state));
                                             }
                                             else if byte_count >= 2 {

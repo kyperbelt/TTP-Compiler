@@ -384,7 +384,7 @@ impl DebugInfo for Statement{
     fn col(&self)->u32{self.col}
     fn raw(&self)->&str{self.value.as_str()}
     fn dump(&self,level : usize)->String{
-        let mut string = format!("({:?}):\"{}\"",self.statement_type,self.raw());
+        let mut string = format!("[b_{}]({:?}):\"{}\"",self.byte_addr,self.statement_type,self.raw());
 
         for exp in &self.expressions{
             string.push('\n');

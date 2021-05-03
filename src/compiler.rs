@@ -175,7 +175,7 @@ struct LabelInfo<'a>{
 }
 
 pub struct Program{
-    instructions : Vec<Instruction>
+    pub instructions : Vec<Instruction>
 }
 
 impl Program{

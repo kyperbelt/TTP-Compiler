@@ -1,5 +1,6 @@
 mod compiler;
 mod cli;
+mod vm;
 
 use std::env;
 
@@ -55,4 +56,21 @@ fn test_register_from_char(){
     assert_eq!(None,compiler::Register::from_char('l'));
 
 
+}
+
+#[test]
+fn test_vm_ram(){
+    let vm = vm::VirtualMachine::create();
+
+    // check that write and read work
+    vm.write(0,10);
+    assert_eq!(10,vm.read(0));
+
+    // check that mem locations wrap
+    vm.write(-1,200);
+    assert_eq!(200,vm.read(255));
+
+    // check that mem data wraps
+    vm.write(255,-3);
+    assert_eq!(253, vm.read(255));
 }

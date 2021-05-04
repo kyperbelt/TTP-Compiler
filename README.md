@@ -44,6 +44,6 @@ For a full list of commands run `ttpc` with the `--help` or `-h` commands.
 
 ## Todo:
 An assortment of tasks that still need implementing.
-- [ ] Add virtual machine to help with analysis.
+- [x] Add virtual machine to help with analysis.
 - [ ] Add preprocessing for function returns using register D and stack data structure.
 - [ ] Output to binary.(why? because it would be cool!)

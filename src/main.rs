@@ -59,6 +59,55 @@ fn test_register_from_char(){
 }
 
 #[test]
+fn test_alu_operations(){
+    let vm = vm::VirtualMachine::create();
+
+    // test add
+    vm.set_register_data(compiler::Register::A, 255);
+    vm::ALU::add(&vm,compiler::Register::A,compiler::Register::A);
+
+    assert_eq!(0b_11111110,vm.get_register_data(compiler::Register::A));
+    assert_eq!(true,vm.flags.carry.get());
+    assert_eq!(false,vm.flags.zero.get());
+    assert_eq!(true,vm.flags.sign.get());
+    assert_eq!(false,vm.flags.overflow.get());
+    assert_eq!(true,vm.flags.less_than.get());
+
+    let vm = vm::VirtualMachine::create();
+
+    // test sub
+    vm.set_register_data(compiler::Register::A, 100);
+    vm.set_register_data(compiler::Register::B, 255);
+
+    vm::ALU::sub(&vm,compiler::Register::A,compiler::Register::B);
+
+    assert_eq!(0b_01100101,vm.get_register_data(compiler::Register::A));
+    assert_eq!(true,vm.flags.carry.get());
+    assert_eq!(false,vm.flags.zero.get());
+    assert_eq!(false,vm.flags.sign.get());
+    assert_eq!(false,vm.flags.overflow.get());
+    assert_eq!(false,vm.flags.less_than.get());
+
+    let vm = vm::VirtualMachine::create();
+
+    // test sub2
+    vm.set_register_data(compiler::Register::A, 1);
+    vm.set_register_data(compiler::Register::B, 2);
+
+    vm::ALU::sub(&vm,compiler::Register::A,compiler::Register::B);
+
+    assert_eq!(0b_11111111,vm.get_register_data(compiler::Register::A));
+    assert_eq!(true,vm.flags.carry.get());
+    assert_eq!(false,vm.flags.zero.get());
+    assert_eq!(true,vm.flags.sign.get());
+    assert_eq!(false,vm.flags.overflow.get());
+    assert_eq!(true,vm.flags.less_than.get());
+
+
+
+}
+
+#[test]
 fn test_vm_ram(){
     let vm = vm::VirtualMachine::create();
 

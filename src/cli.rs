@@ -1,6 +1,6 @@
 use std::env::Args;
 
-use crate::compiler;
+use crate::{compiler, vm};
 
 use std::io::prelude::*;
 use std::fs::OpenOptions;
@@ -20,8 +20,8 @@ pub enum CommandType{
     Binary,             // set if binary output (off by default)
     Dump,               // dump the tokens
     Tree,               // show the hierchy
-    Strict              // strict mode to not allow registers are labels and also becomes case sensitive
-    // Analyze TODO: create a vm to run analysis on
+    Strict,              // strict mode to not allow registers are labels and also becomes case sensitive
+    Analyze,
 }
 
 
@@ -37,6 +37,7 @@ impl CommandType{
             "-d" | "--dump"     =>{Some(CommandType::Dump)},
             "-t" | "--tree"     =>{Some(CommandType::Tree)},
             "-s" | "--strict"   =>{Some(CommandType::Strict)}
+            "-a" | "--analyze"   =>{Some(CommandType::Analyze)}
             _=>{
                 if !require_prefix{
                     CommandType::get_type_without_prefix(command)
@@ -64,6 +65,7 @@ impl CommandType{
             CommandType::Binary     |
             CommandType::Dump       |
             CommandType::Strict     |
+            CommandType::Analyze    |
             CommandType::Tree =>{0},
             CommandType::Help =>{-1} //variable size
             _=>{1}
@@ -77,6 +79,7 @@ impl CommandType{
         match self{
             CommandType::Output | CommandType::Binary |
             CommandType::Tree   | CommandType::Dump   |
+            CommandType::Analyze|
             CommandType::Strict => {Some(&[CommandType::Compile])},
             _=>{None}
         }
@@ -93,6 +96,7 @@ impl CommandType{
             "d" | "dump"     =>{Some(CommandType::Dump)},
             "t" | "tree"     =>{Some(CommandType::Tree)}
             "s" | "strict"     =>{Some(CommandType::Strict)}
+            "a" | "analyze"     =>{Some(CommandType::Analyze)}
             _=>{None}
         }
     }
@@ -107,6 +111,7 @@ impl CommandType{
         println!("{}\n",CommandType::Dump.get_help_string());
         println!("{}\n",CommandType::Tree.get_help_string());
         println!("{}\n",CommandType::Strict.get_help_string());
+        println!("{}\n",CommandType::Analyze.get_help_string());
     }
 
     /// get a formated help string for the CommandType
@@ -120,6 +125,7 @@ impl CommandType{
             CommandType::Dump    =>{format!("{:<25} {}","[-d | --dump]", "Output all tokens from the Compile target.")},
             CommandType::Tree    =>{format!("{:<25} {}","[-t | --tree]", "Output a statement heirchy of the Compile target.")},
             CommandType::Strict  =>{format!("{:<25} {}\n{:<25}{}","[-s | --strict]", "Strict flag | no register identifiers as labels and",""," everything is case sensitive.")},
+            CommandType::Analyze =>{format!("{:<25} {}\n{:<25}{}","[-a | --analyze]", "Run trace analysis on the compiled program.","","--")},
         }
     }
 
@@ -164,6 +170,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
     let mut dump_tokens : bool = false;
     let mut show_tree : bool = false;
     let mut strict : bool =  false;
+    let mut analyze : bool = false;
 
     while next_command != None{
 
@@ -287,6 +294,9 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
             CommandType::Strict =>{
                 // apply strict rules
                 strict = true;
+            },
+            CommandType::Analyze =>{
+                analyze = true;
             }
         }
         next_command = iter.next();
@@ -307,6 +317,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
             println!("Parse Tree:\n{}",parser.as_ref().unwrap().root);
         }
 
+
         let mut out = String::new();
 
         if !binary{
@@ -322,7 +333,30 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
             return Err(format!("unable to write to file!"))
         }
 
-        println!("compiled to file: {:?}" , output.unwrap().as_os_str());
+        if analyze{
+
+            let vm = vm::VirtualMachine::create();
+            vm.load(&p)?;
+            vm.run();
+
+            println!("\nRegisters[A:{:0>3},B:{:0>3},C:{:0>3},D:{:0>3}] \nFlags[C:{}, L:{}, Z:{}, O:{}, S:{}]",
+                     vm.get_register_data(compiler::Register::A),
+                     vm.get_register_data(compiler::Register::B),
+                     vm.get_register_data(compiler::Register::C),
+                     vm.get_register_data(compiler::Register::D),
+                     vm.flags.carry.get(),
+                     vm.flags.less_than.get(),
+                     vm.flags.zero.get(),
+                     vm.flags.overflow.get(),
+                     vm.flags.sign.get(),
+            );
+
+
+        }else{
+
+            println!("compiled to file: {:?}" , output.unwrap().as_os_str());
+        }
+
     }
 
 

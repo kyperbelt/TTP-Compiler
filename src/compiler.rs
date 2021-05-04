@@ -156,6 +156,16 @@ impl Register{
 
         }
     }
+
+    pub fn from_bits(bits : u8)->Register{
+        match bits % 4 {
+            0 => Register::A,
+            1 => Register::B,
+            2 => Register::C,
+            3 => Register::D,
+            _=> Register::D // should never hit this
+        }
+    }
 }
 
 pub struct Instruction{

@@ -598,11 +598,11 @@ impl VirtualMachine{
 
                     let ram_addr = self.get_register_data(right) as isize;
                     let data = self.read(ram_addr);
+                    ram_str = format!("RAM_R[{:02x}]={:02x}",self.get_register_data(right) as isize,data);
                     self.set_register_data(left,data);
 
                     reg_str = format!("{:?}={:02x}",left,data);
 
-                    ram_str = format!("RAM_R[{:02x}]={:02x}",pc_value as isize,data);
 
                 }else if instruction_head == 0b0101{ // COPY REGISTER X=Y
                     op_str.push_str("cpr");

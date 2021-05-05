@@ -461,7 +461,7 @@ impl Compiler{
                 }else{
                     // subtract
                     for sub_exp in &expression.expressions{
-                        result+=std::num::Wrapping::<u8>(Compiler::evaluate_expression(strict,byte_addr,sub_exp,labels)?);
+                        result-=std::num::Wrapping::<u8>(Compiler::evaluate_expression(strict,byte_addr,sub_exp,labels)?);
                     }
 
                 }

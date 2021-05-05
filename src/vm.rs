@@ -1,10 +1,12 @@
 use std::cell::{Cell, RefCell};
+use std::io::Write;
 
 use crate::compiler::{Program, Register};
 
 
 
 pub struct VirtualMachine{
+    pub mode          : Cell<u8>,  // MODE FLAGS[? ? ? ? ? ? COLOR_FLAGS ENABLED]
     instruction_count : Cell<usize>,
     program_counter   : Cell<u8>,
     register_a        : Cell<u8>,
@@ -247,6 +249,7 @@ impl VirtualMachine{
 
     pub fn create()->Self{
         VirtualMachine{
+            mode              : Cell::new(0),
             instruction_count : Cell::new(0),
             program_counter   : Cell::new(0),
             register_a        : Cell::new(0),
@@ -271,9 +274,23 @@ impl VirtualMachine{
     }
 
     pub fn run(&self){
-        println!("TRACE:\n");
+        println!("TRACE:");
         while!self.halt.get(){
-            println!("{}",self.run_instruction());
+
+            match self.mode.get(){
+
+                0=>{
+                    println!("{}{}","",self.run_instruction());
+
+                },
+                _=> {
+                    let dark = self.instruction_count.get() % 2 == 0;
+                    print!("{}{}{}\n",if dark {"\x1b[48;5;245m\x1b[38;5;233m"}else{""},self.run_instruction(),"\x1b[0m");
+                    std::io::stdout().flush().unwrap();
+
+                },
+            }
+
         }
 
     }
@@ -719,8 +736,18 @@ impl VirtualMachine{
         self.program_counter.set((self.program_counter.get() as isize + 1) as u8);
         self.instruction_count.set(instruction_count +1);
 
-        //        000 : PC[00] -> (OP[    ] A=00,B=00) | A=FF | RAM_R[00]=00 | FLAGS[ c=0 z=0 s=0 o=0 l=0 ]
-        format!("{:0>3} : PC[{:02X}] -> (OP[{:<4}] {:<4}{:<5}) | {:<4} | {:<12} | FLAGS[ c={} z={} s={} o={} l={} ]",
+
+        let c = self.flags.carry.get();
+        let z = self.flags.zero.get();
+        let s = self.flags.sign.get();
+        let o = self.flags.overflow.get();
+        let l = self.flags.less_than.get();
+
+        let dark = self.mode.get() != 0 && self.instruction_count.get() % 2 == 0;
+        let color_flags = (self.mode.get() & 2) != 0;
+
+        //        000 : PC[00]->(OP[    ] A=00,B=00) | A=FF | RAM_R[00]=00 | FLAGS[ c=0 z=0 s=0 o=0 l=0 ]
+        format!("{:0>3} : PC[{:02X}]->(OP[{:<4}] {:<4}{:<5}) | {:<4} | {:<12} | FLAGS[ c={} z={} s={} o={} l={} ]",
                 instruction_count,
                 pc_value,
                 op_str,
@@ -728,11 +755,11 @@ impl VirtualMachine{
                 right_str,
                 reg_str,
                 ram_str,
-                self.flags.carry.get() as u8,
-                self.flags.zero.get() as u8,
-                self.flags.sign.get() as u8,
-                self.flags.overflow.get() as u8,
-                self.flags.less_than.get() as u8
+                format!("{}{}{}",if color_flags && c {"\x1b[38;5;46m"}else if color_flags && !c{"\x1b[38;5;196m"}else{""},c as u8,if !dark && color_flags{"\x1b[38;5;233m"}else if dark && color_flags{"\x1b[0m"}else{""}),
+                format!("{}{}{}",if color_flags && z {"\x1b[38;5;46m"}else if color_flags && !z{"\x1b[38;5;196m"}else{""},z as u8,if !dark && color_flags{"\x1b[38;5;233m"}else if dark && color_flags{"\x1b[0m"}else{""}),
+                format!("{}{}{}",if color_flags && s {"\x1b[38;5;46m"}else if color_flags && !s{"\x1b[38;5;196m"}else{""},s as u8,if !dark && color_flags{"\x1b[38;5;233m"}else if dark && color_flags{"\x1b[0m"}else{""}),
+                format!("{}{}{}",if color_flags && o {"\x1b[38;5;46m"}else if color_flags && !o{"\x1b[38;5;196m"}else{""},o as u8,if !dark && color_flags{"\x1b[38;5;233m"}else if dark && color_flags{"\x1b[0m"}else{""}),
+                format!("{}{}{}",if color_flags && l {"\x1b[38;5;46m"}else if color_flags && !l{"\x1b[38;5;196m"}else{""},l as u8,if !dark && color_flags{"\x1b[38;5;233m"}else if dark && color_flags{"\x1b[0m"}else{""}),
         )
 
     }

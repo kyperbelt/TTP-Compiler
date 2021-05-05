@@ -65,9 +65,9 @@ impl CommandType{
             CommandType::Binary     |
             CommandType::Dump       |
             CommandType::Strict     |
+            CommandType::Tree        =>{0},
             CommandType::Analyze    |
-            CommandType::Tree =>{0},
-            CommandType::Help =>{-1} //variable size
+            CommandType::Help        =>{-1} //variable size
             _=>{1}
         }
     }
@@ -125,7 +125,7 @@ impl CommandType{
             CommandType::Dump    =>{format!("{:<25} {}","[-d | --dump]", "Output all tokens from the Compile target.")},
             CommandType::Tree    =>{format!("{:<25} {}","[-t | --tree]", "Output a statement heirchy of the Compile target.")},
             CommandType::Strict  =>{format!("{:<25} {}\n{:<25}{}","[-s | --strict]", "Strict flag | no register identifiers as labels and",""," everything is case sensitive.")},
-            CommandType::Analyze =>{format!("{:<25} {}\n{:<25}{}","[-a | --analyze]", "Run trace analysis on the compiled program.","","--")},
+            CommandType::Analyze =>{format!("{:<25} {}\n{:<25}{}","[-a | --analyze] <flags>", "Run trace analysis on the compiled program.",""," FLAGS : [NONE] [NONE] [NONE] [NONE] [NONE] [NONE] [COLOR_FLAGS] [ENABLE]")},
         }
     }
 
@@ -171,6 +171,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
     let mut show_tree : bool = false;
     let mut strict : bool =  false;
     let mut analyze : bool = false;
+    let mut analyze_mode : u8 = 0;
 
     while next_command != None{
 
@@ -297,6 +298,10 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
             },
             CommandType::Analyze =>{
                 analyze = true;
+                if let Some(arg) = &command.arg{
+                    analyze_mode = arg.parse::<isize>().ok().unwrap_or(0) as u8;
+                }
+
             }
         }
         next_command = iter.next();
@@ -336,6 +341,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
         if analyze{
 
             let vm = vm::VirtualMachine::create();
+            vm.mode.set(analyze_mode);
             vm.load(&p)?;
             vm.run();
 

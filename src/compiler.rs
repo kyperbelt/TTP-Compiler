@@ -460,9 +460,12 @@ impl Compiler{
 
                 }else{
                     // subtract
-                    for sub_exp in &expression.expressions{
-                        result-=std::num::Wrapping::<u8>(Compiler::evaluate_expression(strict,byte_addr,sub_exp,labels)?);
-                    }
+                    //
+                    // should always contain at least 2 sub expressions
+                    // so we will work under that assumption
+                    result = std::num::Wrapping::<u8>(Compiler::evaluate_expression(strict,byte_addr,&expression.expressions[1],labels)?) -
+                             std::num::Wrapping::<u8>(Compiler::evaluate_expression(strict,byte_addr,&expression.expressions[0],labels)?);
+
 
                 }
 

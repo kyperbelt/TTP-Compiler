@@ -22,6 +22,7 @@ pub enum CommandType{
     Tree,               // show the hierchy
     Strict,              // strict mode to not allow registers are labels and also becomes case sensitive
     Analyze,
+    Interrupt,
 }
 
 
@@ -37,7 +38,8 @@ impl CommandType{
             "-d" | "--dump"     =>{Some(CommandType::Dump)},
             "-t" | "--tree"     =>{Some(CommandType::Tree)},
             "-s" | "--strict"   =>{Some(CommandType::Strict)}
-            "-a" | "--analyze"   =>{Some(CommandType::Analyze)}
+            "-a" | "--analyze"  =>{Some(CommandType::Analyze)}
+            "-i" | "--interrupt"=>{Some(CommandType::Interrupt)}
             _=>{
                 if !require_prefix{
                     CommandType::get_type_without_prefix(command)
@@ -52,8 +54,9 @@ impl CommandType{
     pub fn get_priority(&self)->usize{
         match self{
             CommandType::Compile => {50},
-            CommandType::Dump   |
-            CommandType::Tree   |
+            CommandType::Dump      |
+            CommandType::Tree      |
+            CommandType::Interrupt |
             CommandType::Strict => {40}
             _=>{100}
         }
@@ -81,6 +84,7 @@ impl CommandType{
             CommandType::Tree   | CommandType::Dump   |
             CommandType::Analyze|
             CommandType::Strict => {Some(&[CommandType::Compile])},
+            CommandType::Interrupt =>{Some(&[CommandType::Analyze])}
             _=>{None}
         }
     }
@@ -94,9 +98,10 @@ impl CommandType{
             "o" | "output"   =>{Some(CommandType::Output)},
             "b" | "binary"   =>{Some(CommandType::Binary)},
             "d" | "dump"     =>{Some(CommandType::Dump)},
-            "t" | "tree"     =>{Some(CommandType::Tree)}
-            "s" | "strict"     =>{Some(CommandType::Strict)}
-            "a" | "analyze"     =>{Some(CommandType::Analyze)}
+            "t" | "tree"     =>{Some(CommandType::Tree)},
+            "s" | "strict"     =>{Some(CommandType::Strict)},
+            "a" | "analyze"     =>{Some(CommandType::Analyze)},
+            "i" | "interrupt"     =>{Some(CommandType::Interrupt)},
             _=>{None}
         }
     }
@@ -112,6 +117,7 @@ impl CommandType{
         println!("{}\n",CommandType::Tree.get_help_string());
         println!("{}\n",CommandType::Strict.get_help_string());
         println!("{}\n",CommandType::Analyze.get_help_string());
+        println!("{}\n",CommandType::Interrupt.get_help_string());
     }
 
     /// get a formated help string for the CommandType
@@ -125,7 +131,8 @@ impl CommandType{
             CommandType::Dump    =>{format!("{:<25} {}","[-d | --dump]", "Output all tokens from the Compile target.")},
             CommandType::Tree    =>{format!("{:<25} {}","[-t | --tree]", "Output a statement heirchy of the Compile target.")},
             CommandType::Strict  =>{format!("{:<25} {}\n{:<25}{}","[-s | --strict]", "Strict flag | no register identifiers as labels and",""," everything is case sensitive.")},
-            CommandType::Analyze =>{format!("{:<25} {}\n{:<25}{}","[-a | --analyze] <flags>", "Run trace analysis on the compiled program.",""," FLAGS : [NONE] [NONE] [NONE] [NONE] [NONE] [NONE] [COLOR_FLAGS] [ENABLE]")},
+            CommandType::Analyze =>{format!("{:<25} {}\n{:<25}{}","[-a | --analyze] <flags>", "Run trace analysis on the compiled program.","","<-a 1> to enable formatting or <-a 2> to add flag colors. \n\t\t\tFLAGS:[X|X|X|X|X|X|COLOR_FLAGS|ENABLE]")},
+            CommandType::Interrupt =>{format!("{:<25} {}\n{:<25}{}","[-i | --interrupt]<count>", "Interrupts an analysis after <count>",""," instruction.")},
         }
     }
 
@@ -172,6 +179,8 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
     let mut strict : bool =  false;
     let mut analyze : bool = false;
     let mut analyze_mode : u8 = 0;
+    let mut interrupt_analysis : bool  = false;
+    let mut interrupt_after : isize = -1;
 
     while next_command != None{
 
@@ -280,6 +289,23 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
                 }
 
             },
+            CommandType::Interrupt=>{
+                // interrupt trace analysis with count
+                interrupt_analysis = true;
+                if let Some(arg) = &command.arg{
+                    if let Ok(num) = arg.parse::<isize>(){
+                        if num < 0 {
+                            return Err(format!("[{}] is not a valid interrupt count. Must be positive.", num));
+                        }
+
+                        interrupt_after = num;
+
+                    }
+
+                }
+
+
+            },
             CommandType::Binary=>{
                 // output as binary without logisim header
                 binary = true;
@@ -343,7 +369,7 @@ pub fn handle_commands(commands : &[Command])->Result<(),String>{
             let vm = vm::VirtualMachine::create();
             vm.mode.set(analyze_mode);
             vm.load(&p)?;
-            vm.run();
+            vm.run(interrupt_analysis,interrupt_after);
 
             println!("\nRegisters[A:{:0>3},B:{:0>3},C:{:0>3},D:{:0>3}] \nFlags[C:{}, L:{}, Z:{}, O:{}, S:{}]",
                      vm.get_register_data(compiler::Register::A),

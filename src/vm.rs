@@ -273,9 +273,12 @@ impl VirtualMachine{
         self.ram.borrow()[(addr as u8) as usize]
     }
 
-    pub fn run(&self){
+    pub fn run(&self,interrupt : bool, after : isize){
         println!("TRACE:");
-        while!self.halt.get(){
+        while !self.halt.get(){
+
+            // interrupt if interrupt set
+            if interrupt && self.instruction_count.get() > after as usize {break;}
 
             match self.mode.get(){
 

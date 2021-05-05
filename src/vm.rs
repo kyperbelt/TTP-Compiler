@@ -685,12 +685,12 @@ impl VirtualMachine{
                 }else if instruction_head == 0b1101{ //  OR  X = X|Y
 
                     left_str = format!("{:?}={:02x}",left,self.get_register_data(left));
-                    right_str = format!(",{:?}={:02x}",right,self.get_register_data(right));
                     if left == right{
                         ALU::inc(self,left);
                         op_str.push_str("inc");
 
                     }else{
+                        right_str = format!(",{:?}={:02x}",right,self.get_register_data(right));
                         op_str.push_str("or");
                         ALU::or(self, left, right);
                     }

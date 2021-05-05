@@ -20,6 +20,8 @@ cargo build --release
 The binary file should be located in the `<project>/target/release/` folder.
 
 ## Getting Started
+[*NOTE*]:`if you downloaded one of the release binaries, you must rename it or use the full name to call it`
+
 To get started using ttpc to convert your beautiful ttpasm into logisim loadable machine code you simply run ttpc as follows:
 ### Windows
 ```

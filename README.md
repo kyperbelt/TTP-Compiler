@@ -1,4 +1,7 @@
 # TTP_Compiler
+
+![](https://github.com/kyperbelt/TTP_Compiler/actions/workflows/rust.yml/badge.svg)
+
 A compiler/assembler for files written in .ttpasm to work with "Tak's Toy Processor". 
 
 ## Contents

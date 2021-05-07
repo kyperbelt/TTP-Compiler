@@ -58,4 +58,5 @@ An assortment of tasks that still need implementing.
 - [ ] Output to binary.(why? because it would be cool!)
 
 ## Credits:
+* [Tak Auyeung](auyeunt@arc.losrios.edu) - for creating tpp and ttpasm, without which this project wouldn't exist.  
 * [Nes370](https://github.com/Nes370) - for helping with suggestions and debugging. 

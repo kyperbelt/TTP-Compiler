@@ -503,10 +503,10 @@ impl Compiler{
                 }
             },
             ExpressionType::Value=>{
-                if let Ok(val) = expression.value.parse::<u8>(){
-                    Ok(val)
+                if let Ok(val) = expression.value.parse::<isize>(){
+                    Ok(val as u8)
                 }else{
-                    let message = format!("Unable to convert \"{}\" to 8bit integer value on line:{} col:{}",expression.value, expression.line(),expression.col());
+                    let message = format!("Unable to convert '{}' to 8bit integer value on line:{} col:{}",expression.value, expression.line(),expression.col());
                     Err(message)
 
                 }

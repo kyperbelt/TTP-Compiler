@@ -192,7 +192,44 @@ impl Lexer{
                             }
                         },
                         '+'=>{line_tokens.push(Token::create(TokenType::Plus,line_number,col_number,String::from(current_char),self.current_state));},
-                        '-'=>{line_tokens.push(Token::create(TokenType::Minus,line_number,col_number,String::from(current_char),self.current_state));},
+                        '-'=>{
+                            let mut next = line_chars.next();
+
+                            if let Some(next_char) = next{
+
+                                // check if next char is a number
+                                if next_char.is_numeric(){
+                                    let mut l_next = next_char; // local next_char for loop purpose
+                                    let mut value : String = String::from('-'); //push the minus to the stack
+                                    while l_next.is_numeric(){
+                                        value.push(l_next);
+                                        next = line_chars.next();
+                                        l_next = ' ';
+                                        if let Some(numc) = next{
+                                            l_next = numc;
+                                        }
+                                    }
+
+                                    if l_next!=' ' {
+                                        // something possibly went wrong since we dont expect anything connected to this number
+                                        // could be a syntax issue
+                                        return Err(format!("Failed to parse number at line:{} col:{}",line_number,col_number));
+                                    }
+
+                                    line_tokens.push(Token::create(TokenType::Number,line_number,col_number,value,self.current_state));
+
+
+                                }else{
+
+                                    line_tokens.push(Token::create(TokenType::Minus,line_number,col_number,String::from(current_char),self.current_state));
+                                }
+
+
+                                next_token_set = true;
+                                current = next;
+                            }
+
+                        },
                         '.'=>{line_tokens.push(Token::create(TokenType::Dot,line_number,col_number,String::from(current_char),self.current_state));},
                         ' '=>{}, // skip
                         _=>{

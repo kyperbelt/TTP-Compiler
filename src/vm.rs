@@ -61,13 +61,13 @@ impl Flags{
         self.carry.set(f);
     }
 
-    pub fn reset(&self){
-        self.zero.set(false);
-        self.less_than.set(false);
-        self.overflow.set(false);
-        self.sign.set(false);
-        self.carry.set(false);
-    }
+    // pub fn reset(&self){
+    //     self.zero.set(false);
+    //     self.less_than.set(false);
+    //     self.overflow.set(false);
+    //     self.sign.set(false);
+    //     self.carry.set(false);
+    // }
 }
 
 pub struct ALU{}
@@ -280,19 +280,17 @@ impl VirtualMachine{
             // interrupt if interrupt set
             if interrupt && self.instruction_count.get() > after as usize {break;}
 
-            match self.mode.get(){
 
-                0=>{
-                    println!("{}{}","",self.run_instruction());
+            if self.mode.get() & 1 != 0 { // checker mode enabled
 
-                },
-                _=> {
-                    let dark = self.instruction_count.get() % 2 == 0;
-                    print!("{}{}{}\n",if dark {"\x1b[48;5;245m\x1b[38;5;233m"}else{""},self.run_instruction(),"\x1b[0m");
-                    std::io::stdout().flush().unwrap();
-
-                },
+                let dark = self.instruction_count.get() % 2 == 0;
+                print!("{}{}{}\n",if dark {"\x1b[48;5;245m\x1b[38;5;233m"}else{""},self.run_instruction(),"\x1b[0m");
+                std::io::stdout().flush().unwrap();
+            }else{
+                // no checker mode
+                println!("{}{}","",self.run_instruction());
             }
+
 
         }
 
@@ -746,7 +744,7 @@ impl VirtualMachine{
         let o = self.flags.overflow.get();
         let l = self.flags.less_than.get();
 
-        let dark = self.mode.get() != 0 && self.instruction_count.get() % 2 == 0;
+        let dark = self.mode.get() & 1 != 0 && instruction_count % 2 == 0;
         let color_flags = (self.mode.get() & 2) != 0;
 
         //        000 : PC[00]->(OP[    ] A=00,B=00) | A=FF | RAM_R[00]=00 | FLAGS[ c=0 z=0 s=0 o=0 l=0 ]
@@ -758,11 +756,45 @@ impl VirtualMachine{
                 right_str,
                 reg_str,
                 ram_str,
-                format!("{}{}{}",if color_flags && c {"\x1b[38;5;46m"}else if color_flags && !c{"\x1b[38;5;196m"}else{""},c as u8,if !dark && color_flags{"\x1b[38;5;233m"}else if dark && color_flags{"\x1b[0m"}else{""}),
-                format!("{}{}{}",if color_flags && z {"\x1b[38;5;46m"}else if color_flags && !z{"\x1b[38;5;196m"}else{""},z as u8,if !dark && color_flags{"\x1b[38;5;233m"}else if dark && color_flags{"\x1b[0m"}else{""}),
-                format!("{}{}{}",if color_flags && s {"\x1b[38;5;46m"}else if color_flags && !s{"\x1b[38;5;196m"}else{""},s as u8,if !dark && color_flags{"\x1b[38;5;233m"}else if dark && color_flags{"\x1b[0m"}else{""}),
-                format!("{}{}{}",if color_flags && o {"\x1b[38;5;46m"}else if color_flags && !o{"\x1b[38;5;196m"}else{""},o as u8,if !dark && color_flags{"\x1b[38;5;233m"}else if dark && color_flags{"\x1b[0m"}else{""}),
-                format!("{}{}{}",if color_flags && l {"\x1b[38;5;46m"}else if color_flags && !l{"\x1b[38;5;196m"}else{""},l as u8,if !dark && color_flags{"\x1b[38;5;233m"}else if dark && color_flags{"\x1b[0m"}else{""}),
+                format!("{}{}{}",
+                        if color_flags && c {"\x1b[38;5;46m"}
+                        else if color_flags && !c{"\x1b[38;5;196m"}
+                        else{""}
+                        ,c as u8,
+                        if dark && color_flags{"\x1b[38;5;233m"}
+                        else if !dark && color_flags{"\x1b[0m"}
+                        else{""}),
+                format!("{}{}{}",
+                        if color_flags && z {"\x1b[38;5;46m"}
+                        else if color_flags && !z{"\x1b[38;5;196m"}
+                        else{""}
+                        ,z as u8,
+                        if dark && color_flags{"\x1b[38;5;233m"}
+                        else if !dark && color_flags{"\x1b[0m"}
+                        else{""}),
+                format!("{}{}{}",if color_flags && s {"\x1b[38;5;46m"}
+                        else if color_flags && !s{"\x1b[38;5;196m"}
+                        else{""}
+                        ,s as u8,
+                        if dark && color_flags{"\x1b[38;5;233m"}
+                        else if !dark && color_flags{"\x1b[0m"}
+                        else{""}),
+                format!("{}{}{}",
+                        if color_flags && o {"\x1b[38;5;46m"}
+                        else if color_flags && !o{"\x1b[38;5;196m"}
+                        else{""}
+                        ,o as u8,
+                        if dark && color_flags{"\x1b[38;5;233m"}
+                        else if !dark && color_flags{"\x1b[0m"}
+                        else{""}),
+                format!("{}{}{}",
+                        if color_flags && l {"\x1b[38;5;46m"}
+                        else if color_flags && !l{"\x1b[38;5;196m"}
+                        else{""}
+                        ,l as u8,
+                        if dark && color_flags{"\x1b[38;5;233m"}
+                        else if !dark && color_flags{"\x1b[0m"}
+                        else{""}),
         )
 
     }

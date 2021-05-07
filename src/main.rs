@@ -5,6 +5,7 @@ mod vm;
 use std::env;
 
 
+
 fn main() -> Result<(),String>{
 
     let commands = cli::parse_commands(&mut env::args())?;
@@ -40,6 +41,32 @@ fn main() -> Result<(),String>{
     //     println!("{}",result.err().unwrap());
     // }
     Ok(())
+}
+
+
+#[test]
+fn test_lexer_tokenization(){
+    let mut lexer = compiler::lexer::Lexer::create();
+
+    // test negative numbers and positive numbers
+    let source = "
+        negative: -2 // should be negative 2
+        positive:  3 // should be positive 3
+
+        answer: negative positive -
+    ";
+    let tokens = lexer.tokenize(false,source).unwrap();
+    assert_eq!(8, tokens.len());
+    let mut expected_values : Vec<&str> = vec!["-2","3"];
+    expected_values.reverse();
+
+    for token in &tokens{
+
+        if token.token_type == compiler::lexer::TokenType::Number{
+            assert_eq!(token.value ,expected_values.pop().unwrap());
+        }
+
+    }
 }
 
 

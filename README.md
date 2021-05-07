@@ -14,6 +14,9 @@ A compiler/assembler for files written in .ttpasm to work with "Tak's Toy Proces
 ## How to Build
 To build TTP_Compiler you will need the latest version of the [Rust](https://www.rust-lang.org/tools/install) tool-chain.
 Once you have that installed and setup on your system you should clone this repository to a folder on your local machine.
+
+You can [download the repository](https://github.com/kyperbelt/TTP_Compiler/archive/refs/heads/main.zip) and unzip it. 
+or use git to clone it to your machine with the following command:
 ```
 git clone https://github.com/kyperbelt/TTP_Compiler.git
 ```

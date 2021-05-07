@@ -9,6 +9,7 @@ A compiler/assembler for files written in .ttpasm to work with "Tak's Toy Proces
 * [Getting Started](#getting-started)
 * [Tips](#tips)
 * [Todo](#todo)
+* [Credits](#credits)
 
 ## How to Build
 To build TTP_Compiler you will need the latest version of the [Rust](https://www.rust-lang.org/tools/install) tool-chain.
@@ -52,3 +53,6 @@ An assortment of tasks that still need implementing.
 - [x] Add virtual machine to help with analysis.
 - [ ] Add preprocessing for function returns using register D and stack data structure.
 - [ ] Output to binary.(why? because it would be cool!)
+
+## Credits:
+* [Nes370](https://github.com/Nes370) - for helping with suggestions and debugging. 

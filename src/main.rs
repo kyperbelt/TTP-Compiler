@@ -56,7 +56,9 @@ fn test_lexer_tokenization(){
         answer: negative positive -
     ";
     let tokens = lexer.tokenize(false,source).unwrap();
-    assert_eq!(8, tokens.len());
+
+    // 8 tokens + the EOF token we add at the end of the file
+    assert_eq!(9, tokens.len());
     let mut expected_values : Vec<&str> = vec!["-2","3"];
     expected_values.reverse();
 

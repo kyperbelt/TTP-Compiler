@@ -227,8 +227,9 @@ impl Lexer{
 
                                 next_token_set = true;
                                 current = next;
+                            }else{
+                                line_tokens.push(Token::create(TokenType::Minus,line_number,col_number,String::from(current_char),self.current_state));
                             }
-
                         },
                         '.'=>{line_tokens.push(Token::create(TokenType::Dot,line_number,col_number,String::from(current_char),self.current_state));},
                         ' '=>{}, // skip

@@ -294,6 +294,42 @@ impl VirtualMachine{
 
         }
 
+        //NOTE: 4 == PRINT->STACK with register D as stackpointer
+        if self.mode.get() & 4 != 0{
+            println!("\n{}",self.print_stack(Register::D));
+        }
+
+    }
+
+    fn print_stack(&self, stack_pointer : Register)->String{
+                                                 // STACK[pointer=D]
+        let mut ret_string = String::from(format!("STACK[{:?}]:\n",stack_pointer));
+
+        let value = self.get_register_data(stack_pointer);
+
+
+        // stack is at 253
+        // 256 - 253 = 3
+        // 3 2 1
+        // 253
+        // 254
+        // 255
+        // println!("value:{} range_start:{}",value,256 - value as isize);
+        for i in (1..=(256 - value as isize)).rev(){
+            if value == 0 {break;}
+            // TOP >>  000:[FF]=FF
+            //         000:[FF]=FF
+            //         000:[FF]=FF
+            let ram_index = 256 - i;
+            let data = self.read(ram_index);
+            ret_string.push_str(format!("{}{:0^3}:[{:02X}]={:02X}\n",if ram_index == value as isize {" TOP >> "}else{"        "},ram_index as u8,ram_index as u8,data).as_str());
+        }
+
+        ret_string
+    }
+
+    fn dump_memory(&self)->String{
+        format!("")
     }
 
     pub fn load(&self,program : &Program)->Result<(),String>{

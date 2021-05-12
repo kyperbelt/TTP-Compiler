@@ -163,7 +163,7 @@ impl ALU{
         // the way we check carry is if we overflow
         // or if the left value is greater than the right value
         // this means that left value is a non negative value
-        if (result as u8) > 128 || (left_value  > right_value){
+        if right_value as u8  > left_value as u8{
             vm.flags.set_carry(true);
         }else{
             vm.flags.set_carry(false);

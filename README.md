@@ -1,4 +1,4 @@
-# TTP_Compiler
+# TTP Compiler
 
 ![](https://github.com/kyperbelt/TTP_Compiler/actions/workflows/rust.yml/badge.svg)
 

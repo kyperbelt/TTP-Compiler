@@ -5,7 +5,7 @@
 ### ⚠️DISCLAIMER⚠️ 
 > TTPC is still under development and some features may not function as intended. If you notice something is not working correctly please open an Issue to so that we can resolve it asap.
 
-A compiler/assembler for files written in TTPASM to work with "Tak's Toy Processor". 
+A compiler/assembler for files written in TTPASM to work with Tak's Toy Processor. 
 
 ## Contents
 * [Build](#how-to-build)

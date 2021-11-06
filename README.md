@@ -2,6 +2,8 @@
 
 ![](https://github.com/kyperbelt/TTP_Compiler/actions/workflows/rust.yml/badge.svg)
 
+![alt example image](https://raw.githubusercontent.com/kyperbelt/TTP-Compiler/main/assets/example.gif)
+
 ### ⚠️DISCLAIMER⚠️ 
 > TTPC is still under development and some features may not function as intended. If you notice something is not working correctly please open an Issue so that we can resolve it asap.
 

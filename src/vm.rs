@@ -685,7 +685,7 @@ impl VirtualMachine{
 
                         op_str.push_str("jmp");
                         left_str = format!("{:?}={:02x}",left,self.get_register_data(left));
-                        let jmp_location = self.get_register_data(left);
+                        let jmp_location = self.get_register_data(left) as isize;
                         self.program_counter.set((jmp_location - 1) as u8);
 
 

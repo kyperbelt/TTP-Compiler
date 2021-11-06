@@ -1,8 +1,11 @@
-# TTP_Compiler
+# TTP Compiler
 
 ![](https://github.com/kyperbelt/TTP_Compiler/actions/workflows/rust.yml/badge.svg)
 
-A compiler/assembler for files written in .ttpasm to work with "Tak's Toy Processor". 
+### ⚠️DISCLAIMER⚠️ 
+> TTPC is still under development and some features may not function as intended. If you notice something is not working correctly please open an Issue so that we can resolve it asap.
+
+A compiler/assembler for files written in TTPASM to work with Tak's Toy Processor. 
 
 ## Contents
 * [Build](#how-to-build)
@@ -54,6 +57,7 @@ For a full list of commands run `ttpc` with the `--help` or `-h` commands.
 ## Todo:
 An assortment of tasks that still need implementing.
 - [x] Add virtual machine to help with analysis.
+- [ ] Test suite that ensures feature parity between online assembler.
 - [ ] Add preprocessing for function returns using register D and stack data structure.
 - [ ] Output to binary.(why? because it would be cool!)
 
